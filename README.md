@@ -1,6 +1,15 @@
 # deep-learning-workflow-with-web
 from Azure-deep-learning-project
 
+Customized Azure VM has:
+- Anaconda/Python3
+- Tensorflow-CPU
+
+Pre-loaded Datasets
+- Kaggle Titanic
+- Kaggle Zillow
+- Kaggle Tensorflow Speech Challenge
+
 
 Things to look further into:
 1. GPU-enabled VM
