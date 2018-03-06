@@ -1,9 +1,13 @@
 # deep-learning-workflow-with-web
 from Azure-deep-learning-project
 
+file:///home/chen/Downloads/azure-deep-learning-project-framework.jpg
+
+
 Customized Azure VM has:
 - Anaconda/Python3
 - Tensorflow-CPU
+
 
 Pre-loaded Datasets
 - Kaggle Titanic
