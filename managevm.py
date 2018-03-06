@@ -44,18 +44,18 @@ VM_REFERENCE = {
 # 3) Contains a numeric digit
 # 4) Contains a special character
 # 5) Control characters are not allowed
-def create_linux_vm(network_client, compute_client, group_name, vm_name='myvm', username='myuser', pw='Mypassword1', location='westus'):
+# def create_linux_vm(network_client, compute_client, group_name, vm_name='myvm', username='myuser', pw='Mypassword1', location='westus'):
 
-	# create a NIC
-	nic = create_nic(network_client, group_name)
+# 	# create a NIC
+# 	nic = create_nic(network_client, group_name)
 
-	# Create Linux VM
-	print('\nCreating Linux Virtual Machine')
-	vm_parameters = create_vm_parameters(nic.id, VM_REFERENCE['linux'], vm_name, username, pw, location)
-	async_vm_creation = compute_client.virtual_machines.create_or_update(
-		group_name, vm_name, vm_parameters)
-	async_vm_creation.wait()
-	# TODO check that the VM has started
+# 	# Create Linux VM
+# 	print('\nCreating Linux Virtual Machine')
+# 	vm_parameters = create_vm_parameters(nic.id, VM_REFERENCE['linux'], vm_name, username, pw, location)
+# 	async_vm_creation = compute_client.virtual_machines.create_or_update(
+# 		group_name, vm_name, vm_parameters)
+# 	async_vm_creation.wait()
+# 	# TODO check that the VM has started
 
 def deallocate_vm(compute_client, group_name, vm_name):
 	# Deallocating the VM
@@ -222,28 +222,6 @@ def create_nic(network_client, group_name, vnet_name='myvnet', subnet_name='mysu
 	result = network_client.network_interfaces.get(group_name, nic_name)
 	return result
 
-# Creates a data disk
-# input: data_disk_name
-#		 disk_size (in gigabytes)
-def create_data_disk(compute_client, group_name, data_disk_name='mydatadisk1', disk_size=1):
-	LOCATION = 'westus'
-
-	# Create managed data disk
-	print('\nCreate (empty) managed Data Disk')
-	async_disk_creation = compute_client.disks.create_or_update(
-	    group_name,
-	    data_disk_name,
-	    {
-	        'location': LOCATION,
-	        'disk_size_gb': disk_size,
-	        'creation_data': {
-	            'create_option': 'Empty'
-	        }
-	    }
-	)
-	data_disk = async_disk_creation.result()
-	return data_disk.id
-
 def create_vm_parameters(nic_id, vm_reference, vm_name, os_disk_name, username, pw, location):
 	"""Create the VM parameters structure.
 	"""
@@ -286,10 +264,9 @@ def create_vm_parameters(nic_id, vm_reference, vm_name, os_disk_name, username, 
 		},
 	}
 
-def create_vm(resource_client, compute_client, network_client, storage_client, basename):
+def create_vm(resource_client, compute_client, network_client, storage_client, basename, datadisk_type):
 
 	BASE_NAME = basename
-
 	GROUP_NAME = BASE_NAME
 	STORAGE_NAME = BASE_NAME
 	VIRTUAL_NETWORK_NAME = BASE_NAME
@@ -308,21 +285,7 @@ def create_vm(resource_client, compute_client, network_client, storage_client, b
 	result = create_resource_group(resource_client, GROUP_NAME)
 
 	# 2. Create Azure storage account
-	print('\nCreate Storage Account')
-	result = storage_client.storage_accounts.create(
-		GROUP_NAME,
-		STORAGE_NAME,
-		# {
-		# 	'location': REGION,
-		#     'account_type': 'standard_lrs',
-		# }
-		StorageAccountCreateParameters(
-			sku=Sku(SkuName.standard_ragrs),
-			kind=Kind.storage,
-			location=REGION
-		)
-	)
-	result.wait() # async operation
+	create_storage_account(storage_client, GROUP_NAME, STORAGE_NAME)
 
 	# 3. Create the network interface using a helper function (defined below)
 	nic = create_nic(network_client, GROUP_NAME, VIRTUAL_NETWORK_NAME, SUBNET_NAME, PUBLIC_IP_NAME, \
@@ -338,7 +301,7 @@ def create_vm(resource_client, compute_client, network_client, storage_client, b
 
 	# 4. Attach data disk
 	print('\nCreate data disk and attach to VM')
-	data_disk_id = create_data_disk(compute_client, GROUP_NAME, DATA_DISK_NAME, 10)
+	data_disk_id = create_data_disk(compute_client, GROUP_NAME, datadisk_type, DATA_DISK_NAME, 10)
 	attach_data_disk(compute_client, GROUP_NAME, VM_NAME, DATA_DISK_NAME, data_disk_id)
 
 

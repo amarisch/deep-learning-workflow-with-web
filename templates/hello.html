@@ -8,10 +8,8 @@
  
     </head>
     <body>
- 
- 
-<div class="container">
 
+<div class="container">
 
   <h2>Deep Learning Tool with Azure</h2>
 
@@ -24,19 +22,26 @@
       <label for="vmname">VM Name:</label>
       <input type="text" class="form-control" id="vmname" name="vmname" placeholder="Enter a simple name for your Deep Learning VM.">
       <br>
-      <label for="name">Username:</label>
+      <label for="username">Username:</label>
       <input type="text" class="form-control" id="username" name="username" placeholder="Default username is azureadminuser.">
       <br>
       <label for="password">Password:</label>
       <input type="password" class="form-control" id="password" name="password" placeholder="Default password is Azureadminpw1.">
- 
+      <br>
+      <label for="datadisk">Data Disk Option:</label>
+        <select type='datadisk' class="form-control" id="datadisk" name="datadisk" placeholder="Choose your Data set.">
+          <option value="all">Deep Learning & Machine Learning Datasets</option>
+          <option value="deeplearning">Deep Learning Datasets</option>
+          <option value="machinelearning">Machine Learning Datasets</option>
+          <option value="empty">No Dataset</option>
+        </select>
  
     </div>
     <button type="submit" class="btn btn-success">Create VM</button>
   </form>
   <br>
   <br>
-  <h4>Available Virtual Machines</h4>
+  <h4>Available Virtual Machines: </h4>
     <div class="list-group">
     {% for vm in vmlist %}
         <a href="/manage-vm/{{ vm }}" target="_blank" class="list-group-item list-group-item-action">Start {{ vm }} VM</a>
@@ -44,7 +49,7 @@
     </div>
   <br>
   <br>
-  <h4>Available Datasets</h4>
+  <h4>Available Datasets: </h4>
     <div class="list-group">
     {% for dataset in datalist %}
         <a href="{{ dataset[2] }}" target="_blank" class="list-group-item list-group-item-action">{{ dataset[0] }} - {{ dataset[1] }}</a>
