@@ -16,6 +16,9 @@ Pre-loaded Datasets
 - Kaggle Zillow
 - Kaggle Tensorflow Speech Challenge
 
+Kaggle data download
+https://github.com/floydwch/kaggle-cli
+
 
 Things to look further into:
 1. GPU-enabled VM
