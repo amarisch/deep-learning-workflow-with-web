@@ -24,45 +24,53 @@ def create_storage_account(storage_client, group_name, storage_name):
 	result.wait() # async operation
 
 # TODO: create more data disk types
-def create_datadisk_parameters(datadisk_type):
+def create_datadisk_parameters(datadisk_type, disk_size):
 	"""Create the datadisk parameters structure.
 	"""
+	creation_data = ""
 	if datadisk_type=='all':
-		return {
+		creation_data = {
 				"createOption": "Copy",
 				"sourceResourceId": "/subscriptions/9fe8d865-a10d-423e-849b-eb2b529102f5/resourceGroups/pylinux/providers/Microsoft.Compute/disks/pylinux"
 				}
 	elif datadisk_type=='machinelearning':
-		return {
+		creation_data = {
 				"createOption": "Copy",
 				"sourceResourceId": "/subscriptions/9fe8d865-a10d-423e-849b-eb2b529102f5/resourceGroups/pylinux/providers/Microsoft.Compute/disks/pylinux"
 				}
 	elif datadisk_type=='deeplearning':
-		return {
+		creation_data = {
 				"createOption": "Copy",
 				"sourceResourceId": "/subscriptions/9fe8d865-a10d-423e-849b-eb2b529102f5/resourceGroups/pylinux/providers/Microsoft.Compute/disks/pylinux"
 				}
 	else:
-		return {
+		creation_data = {
 				'create_option': 'Empty'
 				}
 
+	if datadisk_type=='empty':
+		return {
+					'location': LOCATION,
+					'disk_size_gb': disk_size,
+					'creation_data': creation_data
+				}
+	else:
+		return {
+					'location': LOCATION,
+					'creation_data': creation_data
+				}
 
 # Creates a data disk
 # input: data_disk_name
 #		 disk_size (in gigabytes)
-def create_data_disk(compute_client, group_name, datadisk_type, data_disk_name='mydatadisk1', disk_size=1):
+def create_data_disk(compute_client, group_name, datadisk_type, data_disk_name='mydatadisk1', disk_size=10):
 	# Create managed data disk
 	print('\nCreate managed Data Disk')
-	datadisk_param = create_datadisk_parameters(datadisk_type)
+	datadisk_param = create_datadisk_parameters(datadisk_type, disk_size)
 	async_disk_creation = compute_client.disks.create_or_update(
 	    group_name,
 	    data_disk_name,
-	    {
-	        'location': LOCATION,
-	        'disk_size_gb': disk_size,
-	        'creation_data': datadisk_param
-	    }
+	    datadisk_param
 	)
 	data_disk = async_disk_creation.result()
 	return data_disk.id

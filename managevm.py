@@ -87,6 +87,10 @@ def delete_vm(compute_client, group_name, vm_name):
 	async_vm_delete = compute_client.virtual_machines.delete(group_name, vm_name)
 	async_vm_delete.wait()
 
+def attach_data_disk(compute_client, group_name, vm_name, data_disk_name):
+	disk = compute_client.disks.get(group_name, data_disk_name)
+	attach_data_disk(compute_client, group_name, vm_name, data_disk_name, disk.id)
+
 def attach_data_disk(compute_client, group_name, vm_name, data_disk_name, data_disk_id):
 	print('\nAttach Data Disk')
 	virtual_machine = compute_client.virtual_machines.get(group_name, vm_name)
@@ -264,6 +268,99 @@ def create_vm_parameters(nic_id, vm_reference, vm_name, os_disk_name, username, 
 		},
 	}
 
+# {
+#   "location": "westus",
+#   "properties": {
+#     "hardwareProfile": {
+#       "vmSize": "Standard_D1_v2"
+#     },
+#     "storageProfile": {
+#       "imageReference": {
+#         "id": "/subscriptions/{subscription-id}/resourceGroups/myResourceGroup/providers/Microsoft.Compute/images/{existing-custom-image-name}"
+#       },
+#       "osDisk": {
+#         "caching": "ReadWrite",
+#         "managedDisk": {
+#           "storageAccountType": "Standard_LRS"
+#         },
+#         "name": "myVMosdisk",
+#         "createOption": "FromImage"
+#       }
+
+#     },
+#     "osProfile": {
+#       "adminUsername": "{your-username}",
+#       "computerName": "myVM",
+#       "adminPassword": "{your-password}"
+#     },
+#     "networkProfile": {
+#       "networkInterfaces": [
+#         {
+#           "id": "/subscriptions/{subscription-id}/resourceGroups/myResourceGroup/providers/Microsoft.Network/networkInterfaces/{existing-nic-name}",
+#           "properties": {
+#             "primary": true
+#           }
+#         }
+#       ]
+#     }
+#   },
+#   "name": "myVM"
+# }
+
+# create a vm with empty data disk
+# {
+#   "location": "westus",
+#   "properties": {
+#     "hardwareProfile": {
+#       "vmSize": "Standard_D2_v2"
+#     },
+#     "storageProfile": {
+#       "imageReference": {
+#         "sku": "2016-Datacenter",
+#         "publisher": "MicrosoftWindowsServer",
+#         "version": "latest",
+#         "offer": "WindowsServer"
+#       },
+#       "osDisk": {
+#         "caching": "ReadWrite",
+#         "managedDisk": {
+#           "storageAccountType": "Standard_LRS"
+#         },
+#         "name": "myVMosdisk",
+#         "createOption": "FromImage"
+#       },
+#       "dataDisks": [
+#         {
+#           "diskSizeGB": 1023,
+#           "createOption": "Empty",
+#           "lun": 0
+#         },
+#         {
+#           "diskSizeGB": 1023,
+#           "createOption": "Empty",
+#           "lun": 1
+#         }
+#       ]
+#     },
+#     "osProfile": {
+#       "adminUsername": "{your-username}",
+#       "computerName": "myVM",
+#       "adminPassword": "{your-password}"
+#     },
+#     "networkProfile": {
+#       "networkInterfaces": [
+#         {
+#           "id": "/subscriptions/{subscription-id}/resourceGroups/myResourceGroup/providers/Microsoft.Network/networkInterfaces/{existing-nic-name}",
+#           "properties": {
+#             "primary": true
+#           }
+#         }
+#       ]
+#     }
+#   },
+#   "name": "myVM"
+# }
+
 def create_vm(resource_client, compute_client, network_client, storage_client, basename, datadisk_type):
 
 	BASE_NAME = basename
@@ -301,7 +398,7 @@ def create_vm(resource_client, compute_client, network_client, storage_client, b
 
 	# 4. Attach data disk
 	print('\nCreate data disk and attach to VM')
-	data_disk_id = create_data_disk(compute_client, GROUP_NAME, datadisk_type, DATA_DISK_NAME, 10)
+	data_disk_id = create_data_disk(compute_client, GROUP_NAME, datadisk_type, DATA_DISK_NAME, 15)
 	attach_data_disk(compute_client, GROUP_NAME, VM_NAME, DATA_DISK_NAME, data_disk_id)
 
 
