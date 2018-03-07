@@ -1,5 +1,6 @@
 # deep-learning-workflow-with-web
-from Azure-deep-learning-project
+![alt text](https://github.com/amarisch/deep-learning-workflow-with-web/blob/master/images/azure-deep-learning-project-framework.jpg)
+
 
 
 
