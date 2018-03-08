@@ -72,3 +72,10 @@ def print_properties(props):
         print("\t\tProvisioning State: {}".format(props.provisioning_state))
         print("\t\t{}".format(props.properties))
     print("\n\n")
+
+from subprocess import call
+
+def open_jupy_notebook(ipaddr):
+    return_code = call("echo Hello World", shell=True)
+    command = "ssh -N -f -L localhost:8888:localhost:8889 azureadminuser@" + ipaddr
+    return_code = call(command, shell=True)            

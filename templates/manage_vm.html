@@ -11,20 +11,26 @@
 <div class="container">
   <form  action="" method="post" role="form">
 
-  <h3> What would you like to do with {{ vm }} VM?</h3>
+  <h2> What would you like to do with <b>{{ vm }}</b> VM?</h2>
+  <br>
   <button type="submit" class="btn btn-default btn-block" name="start">Start VM</button>
   <button type="submit" class="btn btn-default btn-block" name="stop">Stop VM</button>
   <button type="submit" class="btn btn-default btn-block" name="deallocate">Deallocate VM</button>
-  <button type="submit" class="btn btn-default btn-block" name="attach">Attach Data Disk</button>
-  <button type="submit" class="btn btn-default btn-block" name="detach">Detach Data Disk</button>
-  </form>
-
+  
   {% if ipaddr %}
-  <h2>Starting {{ vm }} VM...</h2>
+  <h3>Starting {{ vm }} VM...</h3>
   <p>
-    VM available at IP Address: {{ ipaddr }}
+    VM available at IP Address: {{ ipaddr }} <br>
+    ssh into the vm with azureadminuser@{{ ipaddr }} and password (Azureadminpw1) <br>
+    On Azure server, run jupyter notebook: nohup jupyter notebook --no-browser --port=8889& <br>
+    On your local machine, enable local port forward: ssh -N -f -L localhost:8888:localhost:8889 azureadminuser@{{ ipaddr }} <br>
+    Then you are ready to do some hands-on deep learning tasks! Woohoo!
   </p>
+  <a class="btn btn-success btn-block" href="http://0.0.0.0:8888/" target="_blank">Open Jupyter Notebook</a>
+<!--   <button href="http://0.0.0.0:8888/" target="_blank" type="submit" class="btn btn-default btn-block" name="opennotebook">Open Jupyter Notebook</button> -->
   {% endif %}
+
+  </form>
 
 </div>
 

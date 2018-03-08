@@ -159,6 +159,17 @@ def get_vm_ip_address(network_client, group_name, vm_name):
 	print('VM available at {}'.format(public_ip_address.ip_address))
 	return public_ip_address.ip_address
 
+def get_vm_status(compute_client, group_name, vm_name):
+    '''
+    this will just return the status of the virtual machine
+    sometime the status may be unknown as shown by the azure portal;
+    in that case statuses[1] doesn't exist, hence retrying on IndexError
+    also, it may take on the order of minutes for the status to become
+    available so the decorator will bang on it forever
+    '''
+    return compute_client.virtual_machines.get(group_name, vm_name, expand = 'instanceview')
+
+
 # TODO error handling when something has ben created already
 def create_nic(network_client, group_name, vnet_name='myvnet', subnet_name='mysubnet', ip_name='myip',\
 				nic_name='mynic', ip_config_name='default', location='westus'):

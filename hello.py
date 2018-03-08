@@ -10,7 +10,7 @@ from haikunator import Haikunator
 
 from prompt_toolkit import prompt
 
-from flask import Flask, flash, redirect, render_template, request, session, abort
+from flask import Flask, flash, redirect, render_template, request, session, abort, url_for
 
 from utils import *
 from manageresource import *
@@ -57,10 +57,10 @@ def hello():
  
         if form.validate():
             # Save the comment here.
-            flash('Creating VM ' + vmname + ' ...')
-            create_vm(client.resource, client.compute, client.network, client.storage, vmname, datadisk)
-            vmlist = list_available_vms(client)
-
+            #flash('Creating VM ' + vmname + ' ...')
+            #create_vm(client.resource, client.compute, client.network, client.storage, vmname, datadisk)
+            flash('' + vmname + ' created. Find your new vm in the available vm list below.')
+            return redirect(url_for('hello'))
         else:
             flash('All the form fields are required. ')
  
@@ -72,14 +72,30 @@ def manage_virtualmachine(vm):
 	if request.method=='POST':
 		if 'start' in request.form:
 			print('start vm')
-			start_vm(client.compute, vm, vm)
+			#start_vm(client.compute, vm, vm)
+			result = get_vm_status(client.compute, vm, vm)
+			print (result)
 			ipaddr = get_vm_ip_address(client.network, vm, vm)
+			flash('VM Started.')
 		if 'stop' in request.form:
 			print("stop vm")
 			stop_vm(client.compute, vm, vm)
+			ipaddr = ''
+			flash('VM Stopped (still using computing resources).')
 		if 'deallocate' in request.form:
 		 	print("deallo vm")
 		 	deallocate_vm(client.compute, vm, vm)
+		 	ipaddr = ''
+		 	flash('VM Stopped and deallocated.')
+		# if 'attach' in request.form:
+		# 	print('Attach data disk')
+		# 	attach_data_disk(client.compute, vm, vm, vm)
+		# if 'detach' in request.form:
+		# 	print('Detach data disk')
+		# 	detach_data_disk(client.compute, vm, vm, vm)
+		if 'opennotebook' in request.form:
+		 	print("open jupyter notebook")
+		 	#open_jupy_notebook(ipaddr)
 
 	return render_template('manage_vm.html', vm=vm, ipaddr=ipaddr)
 	#start_vm(client.compute, vm, vm)
