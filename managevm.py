@@ -12,7 +12,7 @@ from azure.mgmt.storage.models import StorageAccountCreateParameters
 from azure.mgmt.storage.models import Sku, SkuName, Kind
 from msrestazure.azure_exceptions import CloudError
 from azure.mgmt.compute import ComputeManagementClient
-
+import base64
 
 
 VM_REFERENCE = {
@@ -240,12 +240,19 @@ def create_nic(network_client, group_name, vnet_name='myvnet', subnet_name='mysu
 def create_vm_parameters(nic_id, vm_reference, vm_name, os_disk_name, username, pw, location):
 	"""Create the VM parameters structure.
 	"""
+	custom_data = ''
+	with open('cloud-init.txt', 'r') as f:
+		custom_data=''.join(line for line in f)
+	print(custom_data)
+	custom_data = base64.b64encode(custom_data)
+
 	return {
 		'location': location,
 		'os_profile': {
 			'computer_name': vm_name,
 			'admin_username': username,
-			'admin_password': pw
+			'admin_password': pw,
+			'custom_data': custom_data
 		},
 		'hardware_profile': {
 			'vm_size': 'Standard_DS1_v2'
@@ -372,7 +379,7 @@ def create_vm_parameters(nic_id, vm_reference, vm_name, os_disk_name, username, 
 #   "name": "myVM"
 # }
 
-def create_vm(resource_client, compute_client, network_client, storage_client, basename, datadisk_type):
+def create_vm(resource_client, compute_client, network_client, storage_client, basename, vmoption):
 
 	BASE_NAME = basename
 	GROUP_NAME = BASE_NAME
@@ -389,15 +396,15 @@ def create_vm(resource_client, compute_client, network_client, storage_client, b
 	ADMIN_PASSWORD='Azureadminpw1'
 	REGION = 'westus'
 
-	# 1. Create a resource group
-	result = create_resource_group(resource_client, GROUP_NAME)
+	# # 1. Create a resource group
+	# result = create_resource_group(resource_client, GROUP_NAME)
 
-	# 2. Create Azure storage account
-	create_storage_account(storage_client, GROUP_NAME, STORAGE_NAME)
+	# # 2. Create Azure storage account
+	# create_storage_account(storage_client, GROUP_NAME, STORAGE_NAME)
 
-	# 3. Create the network interface using a helper function (defined below)
-	nic = create_nic(network_client, GROUP_NAME, VIRTUAL_NETWORK_NAME, SUBNET_NAME, PUBLIC_IP_NAME, \
-				NETWORK_INTERFACE_NAME, 'default', REGION)
+	# # 3. Create the network interface using a helper function (defined below)
+	# nic = create_nic(network_client, GROUP_NAME, VIRTUAL_NETWORK_NAME, SUBNET_NAME, PUBLIC_IP_NAME, \
+	# 			NETWORK_INTERFACE_NAME, 'default', REGION)
 	nic = network_client.network_interfaces.get(GROUP_NAME, NETWORK_INTERFACE_NAME)
 
 	# 4. Create the virtual machine
@@ -407,10 +414,10 @@ def create_vm(resource_client, compute_client, network_client, storage_client, b
 		GROUP_NAME, VM_NAME, vm_parameters)
 	async_vm_creation.wait()
 
-	# 4. Attach data disk
-	print('\nCreate data disk and attach to VM')
-	data_disk_id = create_data_disk(compute_client, GROUP_NAME, datadisk_type, DATA_DISK_NAME, 15)
-	attach_data_disk(compute_client, GROUP_NAME, VM_NAME, DATA_DISK_NAME, data_disk_id)
+	# # 4. Attach data disk
+	# print('\nCreate data disk and attach to VM')
+	# data_disk_id = create_data_disk(compute_client, GROUP_NAME, datadisk_type, DATA_DISK_NAME, 15)
+	# attach_data_disk(compute_client, GROUP_NAME, VM_NAME, DATA_DISK_NAME, data_disk_id)
 
 
 	# Display the public ip address

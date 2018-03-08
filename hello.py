@@ -52,13 +52,13 @@ def hello():
         username=request.form['username']
         password=request.form['password']
         vmname=request.form['vmname']
-        datadisk=request.form['datadisk']
-        print (vmname, " ", username, " ", password, " ", datadisk)
+        vmoption=request.form['vmoption']
+        print (vmname, " ", username, " ", password, " ", vmoption)
  
         if form.validate():
             # Save the comment here.
             #flash('Creating VM ' + vmname + ' ...')
-            #create_vm(client.resource, client.compute, client.network, client.storage, vmname, datadisk)
+            create_vm(client.resource, client.compute, client.network, client.storage, vmname, vmoption)
             flash('' + vmname + ' created. Find your new vm in the available vm list below.')
             return redirect(url_for('hello'))
         else:
