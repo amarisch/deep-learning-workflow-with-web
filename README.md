@@ -8,6 +8,8 @@ Customized Azure VM has:
 - Anaconda/Python3
 - Tensorflow-CPU
 
+Cloud Config scripting
+https://www.digitalocean.com/community/tutorials/an-introduction-to-cloud-config-scripting
 
 Mounting new data disk to VM
 https://docs.microsoft.com/en-us/azure/virtual-machines/linux/add-disk#connect-to-the-linux-vm-to-mount-the-new-disk
