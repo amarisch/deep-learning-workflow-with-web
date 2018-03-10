@@ -1,14 +1,15 @@
 # Azure Virtual Machine and File Share for Deep Learning Development
-    ![alt text](https://github.com/amarisch/deep-learning-workflow-with-web/blob/master/images/azure-deep-learning-project-framework.jpg)
+![alt text](https://github.com/amarisch/deep-learning-workflow-with-web/blob/master/images/azure-deep-learning-project-framework.jpg)
 
 This repo contains a simple workflow for deep learning development/deployment on Azure using python SDK. You will be able to easily set up a deep learning development environment (CPU-only or GPU-enabled) with access to Azure file where you can preload and share datasets.
 
 **On this page**
 
 - [Run this sample](#run)
-- [What does container.py do?](#example)
+- [What does run.py do?](#example)
 - [How is the code laid out?](#code)
 - [Notes and troubleshooting](#troubleshooting)
+- [More Ideas and Functionality](#ideas)
 
 <a id="run"></a>
 
@@ -17,8 +18,7 @@ This repo contains a simple workflow for deep learning development/deployment on
 1.  If you don't already have them, install the following:
 
     - [Python](https://www.python.org/downloads/)
-    - [Docker](https://docs.docker.com/engine/installation/)
-
+    
     You also need the following command-line tools,
     
     
@@ -26,6 +26,17 @@ This repo contains a simple workflow for deep learning development/deployment on
     git clone https://github.com/v-iam/container-sample.git
     ```
 
+
+<a id="example"></a>
+## What does run.py do?
+
+
+<a id="code"></a>
+## Code layout
+
+
+<a id="troubleshooting"></a>
+## Notes and Troubleshooting
 
 Customized Azure VM has:
 - Anaconda/Python3
@@ -46,6 +57,8 @@ Kaggle data download
 https://github.com/floydwch/kaggle-cli
 
 
+<a id="ideas"></a>
+## More Ideas and Functionality
 Things to look further into:
 1. GPU-enabled VM
 https://azure.microsoft.com/en-us/pricing/details/virtual-machines/series/
