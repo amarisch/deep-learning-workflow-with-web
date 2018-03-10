@@ -1,7 +1,30 @@
-# deep-learning-workflow-with-web
-![alt text](https://github.com/amarisch/deep-learning-workflow-with-web/blob/master/images/azure-deep-learning-project-framework.jpg)
+# Azure Virtual Machine and File Share for Deep Learning Development
+    ![alt text](https://github.com/amarisch/deep-learning-workflow-with-web/blob/master/images/azure-deep-learning-project-framework.jpg)
 
+This repo contains a simple workflow for deep learning development/deployment on Azure using python SDK. You will be able to easily set up a deep learning development environment (CPU-only or GPU-enabled) with access to Azure file where you can preload and share datasets.
 
+**On this page**
+
+- [Run this sample](#run)
+- [What does container.py do?](#example)
+- [How is the code laid out?](#code)
+- [Notes and troubleshooting](#troubleshooting)
+
+<a id="run"></a>
+
+## Run this sample
+
+1.  If you don't already have them, install the following:
+
+    - [Python](https://www.python.org/downloads/)
+    - [Docker](https://docs.docker.com/engine/installation/)
+
+    You also need the following command-line tools,
+    
+    
+    ```
+    git clone https://github.com/v-iam/container-sample.git
+    ```
 
 
 Customized Azure VM has:
