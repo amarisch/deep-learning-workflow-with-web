@@ -6,3 +6,4 @@ azure-mgmt-network~=1.0.0
 azure-mgmt-compute~=2.0.0
 haikunator
 azure-mgmt-storage
+azure-storage-file
