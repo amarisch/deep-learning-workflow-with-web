@@ -13,16 +13,19 @@ from helpers.storage_helper import StorageHelper
 from managevm import *
 
 SCRIPTS_DIR = os.path.join(os.path.dirname(__file__), 'scripts')
-
+tunneling_pid = -1
 
 class VirtualMachineDeployer(object):
 	""" Helper for deploying a virtual machine """
-	def __init__(self, client_data, vm_name, resource_group, storage_account, location='westus'):
+	def __init__(self, client_data, vm_name, resource_group, storage_account, username='azureadminuser', password='Azureadminpw1', location='westus'):
 		self.vm_name = vm_name
 		self.resources = ResourceHelper(client_data, location, resource_group)
 		self.storage = StorageHelper(client_data, self.resources, storage_account)
 		self.compute = ComputeManagementClient(client_data.credentials, client_data.subscription_id)
 		self.network = NetworkManagementClient(client_data.credentials, client_data.subscription_id)
+
+		self.username = username
+		self.password = password
 
 
 	def _format_proc_output(self, header, output):
@@ -41,7 +44,7 @@ class VirtualMachineDeployer(object):
 	def cluster_ssh(self):
 		"""Open a ssh connection to the cluster master as a subprocess."""
 		try:
-			cmd = ['ssh', '-i', self.get_key_path(), self.master_ssh_login()]
+			cmd = ['sshpass', '-p', self.password, 'ssh', '-o', 'StrictHostKeyChecking=no', self.master_ssh_login()]
 			print('Connecting to virtual maching:', ' '.join(cmd))
 			proc = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
 		except subprocess.CalledProcessError:
@@ -58,7 +61,7 @@ class VirtualMachineDeployer(object):
 	# TODO user name
 	def master_ssh_login(self):
 		return '{}@{}'.format(
-			'azureadminuser',
+			self.username,
 			self.public_ip()
 		)
 
@@ -67,6 +70,9 @@ class VirtualMachineDeployer(object):
 		address = self.master_ssh_login()
 		try:
 			subprocess.check_output([
+				'sshpass',
+				'-p',
+				self.password,
 				'scp',
 				local_path,
 				'{}:./{}'.format(address, remote_path)
@@ -79,7 +85,31 @@ class VirtualMachineDeployer(object):
 			print('ssh {}'.format(address))
 			sys.exit(1)
 
-	def tunnelforwarding():
+	# def tunnelforwarding(self):
+	# 	ip_addr = self.public_ip()
+	# 	tunnel_remote_port = 8889
+	# 	tunnel_local_port = 8880
+	# 	tunnel_host = '127.0.0.1'
+	# 	try:
+	# 		subprocess.Popen(['sshpass', '-p', self.password, 'ssh', '-o', 'StrictHostKeyChecking=no', \
+	# 				'-N', '-f', '-L', 'localhost:{}:localhost:{}'.format(tunnel_local_port, tunnel_remote_port), \
+	# 				self.master_ssh_login()])
+	# 		print('Tunnel Forwarding')
+	# 	except subprocess.CalledProcessError:
+	# 		traceback.print_exc()
+	# 		print('Your Tunnel forwarding was unsuccessful. ')
+	# 		sys.exit(1)
+
+	# def close_tunnelforwarding(self):
+	# 	try:
+	# 		subprocess.Popen(['kill', tunnel_pid])
+	# 		print('Stopped tunnel forwarding.')
+	# 	except subprocess.CalledProcessError:
+	# 		traceback.print_exc()
+	# 		print('Closing tunnel was unsuccessful. ')
+	# 		sys.exit(1)
+
+	def tunnelforwarding(self):
 		ip_addr = self.public_ip()
 		tunnel_remote_port = 8889
 		tunnel_local_port = 8880
@@ -87,27 +117,30 @@ class VirtualMachineDeployer(object):
 		try:
 			server = SSHTunnelForwarder(
 				ip_addr,
-				ssh_username='azureadminuser',
-				ssh_password='Azureadminpw1',
+				ssh_username=self.username,
+				ssh_password=self.password,
 				remote_bind_address=(tunnel_host, tunnel_remote_port),
 				local_bind_address=(tunnel_host, tunnel_local_port)
 			)
 			server.start()
 			print(server.local_bind_port)  # show assigned local port
+			#server.stop()
 		except HandlerSSHTunnelForwarderError:
 			traceback.print_exc()
 			print('Opening SSH tunnel failed.')
 			print('Please try the following command in a terminal:')
-			print('ssh -N -L {local_host}:{local_port}:{remote_host}:{remote_port} azureadminuser@{addr}'.format(
+			print('ssh -N -L {local_host}:{local_port}:{remote_host}:{remote_port} {username}@{addr}'.format(
 				remote_host=tunnel_host,
 				remote_port=tunnel_remote_port,
 				local_host=tunnel_host,
 				local_port=tunnel_local_port,
+				username=self.username,
 				addr=ip_addr,
 			))
 			sys.exit(1)
 
-	def mount_shares(self):
+	# Arg sharename: when not specified, default_fileshare is created or used
+	def mount_shares(self, sharename=None):
 		"""Mount a file share on all the machines in the cluster.
 		For docs on how this is done, see:
 		https://docs.microsoft.com/en-us/azure/container-service/container-service-dcos-fileshare
@@ -116,20 +149,24 @@ class VirtualMachineDeployer(object):
 		key_file = os.path.basename(self.get_key_path())
 		with io.open(os.path.join(SCRIPTS_DIR, 'cifsMountTemplate.sh')) as cifsMount_template, \
 			 io.open(os.path.join(SCRIPTS_DIR, 'cifsMount.sh'), 'w', newline='\n') as cifsMount:
-			cifsMount.write(
-				# cifsMount_template.read().format(
-				# 	storageacct=self.storage.account.name,
-				# 	sharename=self.storage.default_share,
-				# 	username=self.container_registry.name,
-				# 	password=self.storage.key,
-				# )
-				cifsMount_template.read().format(
-					storageacct=self.storage.name,
-					sharename='deeplearningfileshare',
-					username='azureadminuser',
-					storageacct_password=self.storage.key,
+			if not sharename is None:
+				cifsMount.write(
+					cifsMount_template.read().format(
+						storageacct=self.storage.account.name,
+						sharename=sharename,
+						username=self.username,
+						storageacct_password=self.storage.key,
+					)
 				)
-			)
+			else:
+				cifsMount.write(
+					cifsMount_template.read().format(
+						storageacct=self.storage.account.name,
+						sharename=self.storage.default_share,
+						username=self.username,
+						storageacct_password=self.storage.key,
+					)
+				)
 		self.scp_to_master(os.path.join(SCRIPTS_DIR, 'cifsMount.sh'), '')
 		self.scp_to_master(os.path.join(SCRIPTS_DIR, 'mountShares.sh'), '')
 		self.scp_to_master(self.get_key_path(), key_file)
@@ -139,7 +176,10 @@ class VirtualMachineDeployer(object):
 			proc.stdin.write('chmod 600 {}\n'.format(key_file).encode('ascii'))
 			proc.stdin.write(b'eval ssh-agent -s\n')
 			proc.stdin.write('ssh-add {}\n'.format(key_file).encode('ascii'))
-			mountShares_cmd = 'sh mountShares.sh ~/{}\n'.format(key_file)
+			proc.stdin.write('source ~/.bashrc\n'.encode('ascii'))
+			jupyter_cmd = 'nohup jupyter notebook --port=8889 --notebook-dir=notebook&\n'
+			proc.stdin.write(jupyter_cmd.encode('ascii'))
+			mountShares_cmd = 'sh mountShares.sh\n'
 			print('mounting fileshare...')
 			print('Running mountShares on remote master. Cmd:', mountShares_cmd, sep='\n')
 			proc.stdin.write(mountShares_cmd.encode('ascii'))
@@ -152,6 +192,8 @@ class VirtualMachineDeployer(object):
 	def deploy(self):
 		#start_vm(self.compute, self.resources.group_name, self.vm_name)
 		self.mount_shares()
+		self.tunnelforwarding()
+		self.storage.upload_file('test.txt')
 		return
 
 	def public_ip(self):

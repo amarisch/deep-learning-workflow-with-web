@@ -36,7 +36,7 @@ class ResourceHelper(object):
 
     def list_resources(self):
         """List resources in this helper's resource group."""
-        return self.resource_client.resource_groups.list_resources(self.group_name)
+        return self.resource_client.resource_groups.list_by_resource_group(self.group_name)
 
     def get_by_id(self, resource_id):
         """Get a resource by id from this helper's resource group."""
