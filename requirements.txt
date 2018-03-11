@@ -7,3 +7,4 @@ azure-mgmt-compute~=2.0.0
 haikunator
 azure-mgmt-storage
 azure-storage-file
+sshtunnel

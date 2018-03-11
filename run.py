@@ -14,8 +14,8 @@ from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.storage import StorageManagementClient
 
 from haikunator import Haikunator
-
 from prompt_toolkit import prompt
+from collections import namedtuple
 
 from utils import *
 from manageresource import *
@@ -42,22 +42,22 @@ def run():
 	#credentials, subscription_id = get_credentials()
 	#credentials, subscription_id = get_credentials_from_file('id.txt')
 
-	vm_image = 'azdeeplearningvm'
+	vm_name = 'azdeeplearningvm'
 	resource_group = 'azdeeplearningvm'
 	storage_account = 'azdeeplearningvm'
 
-
+	cred, sub_id = get_credentials_from_file('newid.txt')
 	deployer = VirtualMachineDeployer(
-        ClientArgs(get_credentials_from_file('id.txt')),
-        vm_image,
-        resource_group,
-        storage_account,
-    )
+		ClientArgs(cred, sub_id),
+		vm_name,
+		resource_group,
+		storage_account,
+	)
 
-    deployer.deploy()
-    print('\nVirtual Machine at http://{}'.format(deployer.public_ip()))
-    print('Response:')
-    print(requests.get('http://{}'.format(deployer.public_ip())).text)
+	deployer.deploy()
+	print('\nVirtual Machine at http://{}'.format(deployer.public_ip()))
+	#print('Response:')
+	#print(requests.get('http://{}'.format(deployer.public_ip())).text)
 
 
 	#resource_client = ResourceManagementClient(credentials, subscription_id)
