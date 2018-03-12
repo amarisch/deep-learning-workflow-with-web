@@ -118,7 +118,7 @@ localhost:1048
 
 [`VirtualMachineDeployer`](virtualmachinedeployer.py) class handles all the tasks related to deploying a virtual machine
 
-### Other `ComputeHelper` functionalities
+#### Other `ComputeHelper` functionalities
 * Customize VM with cloud-init
 
    Edit `cloud-init.txt` file and the file used in `create_vm_parameters()`.  
