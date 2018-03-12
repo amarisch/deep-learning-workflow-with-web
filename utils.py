@@ -60,6 +60,18 @@ def get_credentials_from_file(filename):
     )
     return credentials, SUBSCRIPTION_ID
 
+def list_vm_in_subscription(credentials, subscription_id):
+    # List VMs in subscription
+    compute = ComputeManagementClient(credentials, subscription_id)
+    vmlist = [vm.name for vm in compute.virtual_machines.list_all()]
+    return vmlist
+
+def list_vm_in_resource_group(credentials, subscription_id, group_name):
+    # List VMs in resource group
+    compute = ComputeManagementClient(credentials, subscription_id)
+    vmlist = [vm.name for vm in compute.virtual_machines.list(group_name)]  
+    return vmlist
+
 def list_available_datasets():
     datalist = [
                 ['Titanic', 'Simple Machine Learning Problem for disaster', 'https://www.kaggle.com/c/titanic'],
@@ -71,20 +83,4 @@ def list_available_datasets():
 def open_jupy_notebook(ipaddr):
     return_code = call("echo Hello World", shell=True)
     command = "ssh -N -f -L localhost:8888:localhost:8889 azureadminuser@" + ipaddr
-    return_code = call(command, shell=True)            
-
-def print_item(group):
-    """Print a ResourceGroup instance."""
-    print("\tName: {}".format(group.name))
-    print("\tId: {}".format(group.id))
-    print("\tLocation: {}".format(group.location))
-    print("\tTags: {}".format(group.tags))
-    print_properties(group.properties)
-
-def print_properties(props):
-    """Print a ResourceGroup propertyies instance."""
-    if props and props.provisioning_state:
-        print("\tProperties:")
-        print("\t\tProvisioning State: {}".format(props.provisioning_state))
-        print("\t\t{}".format(props.properties))
-    print("\n\n")
+    return_code = call(command, shell=True)

@@ -6,12 +6,10 @@ from contextlib import contextmanager
 import traceback
 
 from sshtunnel import SSHTunnelForwarder, HandlerSSHTunnelForwarderError
-from azure.mgmt.network import NetworkManagementClient
-from azure.mgmt.compute import ComputeManagementClient
 
 from helpers.resource_helper import ResourceHelper
 from helpers.storage_helper import StorageHelper
-from managevm import *
+from helpers.compute_helper import ComputeHelper
 
 SCRIPTS_DIR = os.path.join(os.path.dirname(__file__), 'scripts')
 tunneling_pid = -1
@@ -22,8 +20,7 @@ class VirtualMachineDeployer(object):
 		self.vm_name = vm_name
 		self.resources = ResourceHelper(client_data, location, resource_group)
 		self.storage = StorageHelper(client_data, self.resources, storage_account)
-		self.compute = ComputeManagementClient(client_data.credentials, client_data.subscription_id)
-		self.network = NetworkManagementClient(client_data.credentials, client_data.subscription_id)
+		self.compute = ComputeHelper(client_data, self.resources, vm_name)
 
 		self.username = username
 		self.password = password
@@ -84,30 +81,6 @@ class VirtualMachineDeployer(object):
 			print('Please run the following command to try it:')
 			print('ssh {}'.format(address))
 			sys.exit(1)
-
-	# def tunnelforwarding(self):
-	# 	ip_addr = self.public_ip()
-	# 	tunnel_remote_port = 8889
-	# 	tunnel_local_port = 8880
-	# 	tunnel_host = '127.0.0.1'
-	# 	try:
-	# 		subprocess.Popen(['sshpass', '-p', self.password, 'ssh', '-o', 'StrictHostKeyChecking=no', \
-	# 				'-N', '-f', '-L', 'localhost:{}:localhost:{}'.format(tunnel_local_port, tunnel_remote_port), \
-	# 				self.master_ssh_login()])
-	# 		print('Tunnel Forwarding')
-	# 	except subprocess.CalledProcessError:
-	# 		traceback.print_exc()
-	# 		print('Your Tunnel forwarding was unsuccessful. ')
-	# 		sys.exit(1)
-
-	# def close_tunnelforwarding(self):
-	# 	try:
-	# 		subprocess.Popen(['kill', tunnel_pid])
-	# 		print('Stopped tunnel forwarding.')
-	# 	except subprocess.CalledProcessError:
-	# 		traceback.print_exc()
-	# 		print('Closing tunnel was unsuccessful. ')
-	# 		sys.exit(1)
 
 	def tunnelforwarding(self):
 		ip_addr = self.public_ip()
@@ -185,21 +158,23 @@ class VirtualMachineDeployer(object):
 		self._format_proc_output('Stdout:', out)
 		self._format_proc_output('Stderr:', err)
 
-
-	def deploy(self):
-		start_vm(self.compute, self.resources.group.name, self.vm_name)
-
 	def mount_n_tunnel(self, sharename):
 		self.mount_shares(sharename)
 		self.tunnelforwarding()
 
-	def deploy_new(self):
-		create_vm(self.resources.group.name, self.storage.account.name, self.compute, self.network, self.vm_name)
+	def deploy(self):
+		self.compute.create_vm()
 		self.mount_shares()
-		self.tunnelforwarding()
+
+	def deploy_image(self, image, image_resource_group):
+		self.compute.create_vm(image=image, image_resource_group=image_resource_group)
+		self.mount_shares()
+
+	def start(self):
+		self.compute.start_vm()
 
 	def stop(self):
-		deallocate_vm(self.compute, self.resources.group.name, self.vm_name)	
+		self.compute.deallocate_vm()	
 
 
 	def list_shares(self):
@@ -213,6 +188,4 @@ class VirtualMachineDeployer(object):
 		self.storage.upload_file(path, sharename)
 
 	def public_ip(self):
-		public_ip_address = self.network.public_ip_addresses.get(self.resources.group_name, self.vm_name)
-		print('VM available at {}'.format(public_ip_address.ip_address))
-		return public_ip_address.ip_address
+		return self.compute.public_ip_addr

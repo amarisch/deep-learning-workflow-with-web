@@ -6,8 +6,3 @@ packages:
 runcmd:
   - [curl, -O, https://repo.continuum.io/archive/Anaconda3-5.0.1-Linux-x86_64.sh]
   - [chmod, +x, Anaconda3-5.0.1-Linux-x86_64.sh]
-  - (echo; echoecho yes; echo) | bash Anaconda3-5.0.1-Linux-x86_64.sh
-  - [echo, 'export PATH=/home/azureadminuser/anaconda3/bin:$PATH', >>, /home/azureadminuser/.bashrc]
-  - [source, /home/azureadminuser/.bashrc]
-  - [sudo, mkdir, /mnt/fileshare]
-  - [sudo, mount, -t, cifs, //azdeeplearningvm.file.core.windows.net/deeplearningfileshare, /mnt/fileshare, -o, uid=azureadminuser,vers=3.0,username=azdeeplearningvm,password=oY++EUDpGY0uwWO9hDIkut3W/eDBnTx0e2rht522Wd5JahgGO9JfWIsr9DtWrA/oS+W3B6p+QgHccteDAl1Bnw==,dir_mode=0744,file_mode=0744,serverino]

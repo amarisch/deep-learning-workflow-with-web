@@ -44,3 +44,10 @@ class ResourceHelper(object):
 
     def delete_group(self):
         self.resource_client.resource_groups.delete(self.group_name)
+
+    def print_group_info(self):
+        """Print a ResourceGroup instance."""
+        print("\tName: {}".format(self.group.name))
+        print("\tId: {}".format(self.group.id))
+        print("\tLocation: {}".format(self.group.location))
+        print("\tTags: {}".format(self.group.tags))
