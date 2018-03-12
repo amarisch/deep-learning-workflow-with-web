@@ -18,12 +18,19 @@ This repo contains a simple workflow for deep learning development/deployment on
 1.  If you don't already have them, install the following:
 
     - [Python](https://www.python.org/downloads/)
+    - [Anaconda](#anaconda)
     
-    You also need the following command-line tools,
-    
-    
+1.  Install python requirements
     ```
-    git clone https://github.com/v-iam/container-sample.git
+    pip install -r requirements.txt
+    ```
+1. To run from commandline
+    ```
+    python run.py <Azure credentials filename>
+    ```
+1. To run with a web browser
+    ```
+    python hello.py <Azure credentials filename>
     ```
 
 
@@ -64,3 +71,11 @@ Things to look further into:
 https://azure.microsoft.com/en-us/pricing/details/virtual-machines/series/
 2. Docker for Azure
 https://azuremarketplace.microsoft.com/en-us/marketplace/apps/docker.dockerdatacenter?tab=Overview
+
+<a id="anaconda"></a>
+## Anaconda Installation
+```
+curl -O https://repo.continuum.io/archive/Anaconda3-5.0.1-Linux-x86_64.sh
+chmod +x Anaconda3-5.0.1-Linux-x86_64.sh
+bash Anaconda3-5.0.1-Linux-x86_64.sh
+```
