@@ -1,7 +1,7 @@
 # Azure Virtual Machine and File Share for Deep Learning Development
 ![alt text](https://github.com/amarisch/deep-learning-workflow-with-web/blob/master/images/azure-deep-learning-project-framework.jpg)
 
-This repo contains a simple workflow for deep learning development/deployment on Azure using python SDK. You will be able to easily set up a deep learning development environment (CPU-only or GPU-enabled) with access to Azure file where you can preload and share datasets.
+This repo contains a simple workflow for deep learning development/deployment on Azure using python SDK. You will be able to easily set up a deep learning development environment with access to Azure file where you can preload and share datasets.
 
 **On this page**
 
@@ -61,13 +61,13 @@ This repo contains a simple workflow for deep learning development/deployment on
 
 1. Creates the network interface.
 
-   This includes creating the virtual network, subnet, public ip address, and the network interface. Code can be found in [`managevm.py`](managevm.py) starting line 66.
+   This includes creating the virtual network, subnet, public ip address, and the network interface. Code can be found in [`ComputerHelper`](helpers/compute_helper.py) class starting line 81.
    
 1. Creates the virtual machine.
 
-   Creates linux vm (Canonical UbuntuServer 16.04-LTS). VM image reference has been hard-coded in `managevm.py`.  
+   Creates linux vm (Canonical UbuntuServer 16.04-LTS). VM image reference has been hard-coded in `ComputerHelper` class.  
    
-   If you would like to create a VM from a customized image, call `deployer.deploy(image, group)` specifying *image* name and the *group* the image belongs to.
+   If you would like to create a VM from a customized image, call `deployer.deploy_image(image, group)` specifying *image* name and the *group* the image belongs to.
    
    When the virtual machine is created, it will provide the public address for you to `ssh` into the vm.
 
@@ -105,29 +105,35 @@ localhost:1048
       * mount specific fileshares.
 
 <a id="code"></a>
-## Code layout
+## Code Layout and Additional Functionalities
 
+**helpers** directory contains various helper class used by [`VirtualMachineDeployer`](virtualmachinedeployer.py) class
+   - [`ComputeHelper`](helpers/compute_helper.py)
+   - [`ResourceHelper`](helpers/resource_helper.py)
+   - [`StorageHelper`](helpers/storage_helper.py)
+   
+**scripts** directory contains scripts and templates used for mounting VM fileshares
+
+[`VirtualMachineDeployer`](virtualmachinedeployer.py) class handles all the tasks related to deploying a virtual machine
+
+### Other [`ComputeHelper`](helpers/compute_helper.py) functionalities
+* Customize VM with cloud-init
+
+   Edit `cloud-init.txt` file and the file used in `create_vm_parameters()`.  
+   More info on cloud config scripting can be found [here](https://www.digitalocean.com/community/tutorials/an-introduction-to-cloud-config-scripting)
+   
+* Data Disk Operations
+
+   * create data disk
+   * attach/detach data disk
+   
 
 <a id="troubleshooting"></a>
 ## Notes and Troubleshooting
 
-Customized Azure VM has:
-- Anaconda/Python3
-- Tensorflow-CPU
+Mounting new data disk to VM, a step by step guide can be found [here](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/add-disk#connect-to-the-linux-vm-to-mount-the-new-disk)  
 
-Cloud Config scripting
-https://www.digitalocean.com/community/tutorials/an-introduction-to-cloud-config-scripting
-
-Mounting new data disk to VM
-https://docs.microsoft.com/en-us/azure/virtual-machines/linux/add-disk#connect-to-the-linux-vm-to-mount-the-new-disk
-
-Pre-loaded Datasets
-- Kaggle Titanic
-- Kaggle Zillow
-- Kaggle Tensorflow Speech Challenge
-
-Kaggle data download
-https://github.com/floydwch/kaggle-cli
+Kaggle commandline tool for data download can be found [here](https://github.com/floydwch/kaggle-cli)
 
 
 <a id="ideas"></a>
