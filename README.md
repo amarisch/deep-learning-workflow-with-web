@@ -80,6 +80,9 @@ This repo contains a simple workflow for deep learning development/deployment on
 1. Tunnel Forwarding.
 
    `deployer.tunnelforwarding()` links local port *8880* to port *8889* on the virtual machine.
+   
+1. [Run Jupyter notebook.](#jupyter)
+
 
 <a id="run_web"></a>
 ## Running the web interface
@@ -92,17 +95,16 @@ Open your browser and go to:
 ```
 localhost:1048
 ```
-1. `hello()`
-
-   The main page:   
+1. The main page:   
      * allows you to **create** and deploy a new vm (similar to running run.py).
      * lists existing vms to manage.
      
-1. `manage_virtualmachine(vm)`
-
-    Allows you to:
+1. Manage Virtual Machine page allows you to:
       * run virual machines.
       * mount specific fileshares.
+      * launch jupyter notebook browser (after doing step #3).
+      
+1. [Run Jupyter notebook.](#jupyter)
 
 <a id="code"></a>
 ## Code Layout and Additional Functionalities
@@ -152,3 +154,44 @@ chmod +x Anaconda3-5.0.1-Linux-x86_64.sh
 bash Anaconda3-5.0.1-Linux-x86_64.sh
 ```
 Follow the installation steps and set the PATH. Now when you run `python`, it should return python 3.
+
+<a id="jupyter"></a>
+## Run jupyter notebook on vm
+   
+   `ssh` into the vm
+   
+   Install [Anaconda](#anaconda) to run jupyter notebook.
+   
+   Once Anaconda and jupyter-notebook have been installed, configure jupyter-notebook by first generate a config file
+   
+   ```
+   jupyter notebook --generate-config
+   ```
+   Open and edit the config file
+   ```
+   vi ~/.jupyter/jupyter_notebook_config.py
+   ```
+   Uncomment and make changes to these lines
+   ```
+   c.NotebookApp.open_browser = False    # no browser needed on a server
+   ```
+   ```
+   c.NotebookApp.ip = '0.0.0.0'          # listen on the network
+   ```
+   ```
+   c.NotebookApp.password = ''            # don't require a password
+   ```
+   ```
+   c.NotebookApp.token = ''              # don't require a security token
+   ```
+   You can follow the instructions [here](http://blog.lerner.co.il/five-minute-guide-setting-jupyter-notebook-server/) to configure your jupyter notebook server. There is also a sample [`jupyter_notebook_config.py`](jupyter_notebook_config.py) file in the repo.
+   
+   Make a notebook directory to launch the jupyter notebook server
+   ```
+   mkdir notebook
+   ```
+   Run jupyter notebook in background using nohup
+   ```
+   nohup jupyter notebook --port=8889 --notebook-dir=notebook&
+   ```
+   
