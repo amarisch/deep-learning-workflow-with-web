@@ -118,7 +118,7 @@ localhost:1048
 
 [`VirtualMachineDeployer`](virtualmachinedeployer.py) class handles all the tasks related to deploying a virtual machine
 
-### Other [`ComputeHelper`](helpers/compute_helper.py) functionalities
+### Other `ComputeHelper` functionalities
 * Customize VM with cloud-init
 
    Edit `cloud-init.txt` file and the file used in `create_vm_parameters()`.  
@@ -127,15 +127,17 @@ localhost:1048
 * Data Disk Operations
 
    * create data disk
+   * create data disk from image
    * attach/detach data disk
    
 
 <a id="troubleshooting"></a>
 ## Notes and Troubleshooting
 
-Mounting new data disk to VM, a step by step guide can be found [here](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/add-disk#connect-to-the-linux-vm-to-mount-the-new-disk)  
+#####Mounting new **data disk**  
+A step by step guide can be found [here](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/add-disk#connect-to-the-linux-vm-to-mount-the-new-disk)  
 
-Kaggle commandline tool for data download can be found [here](https://github.com/floydwch/kaggle-cli)
+Kaggle command line tool for data download can be found [here](https://github.com/floydwch/kaggle-cli)
 
 
 <a id="ideas"></a>
