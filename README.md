@@ -7,6 +7,7 @@ This repo contains a simple workflow for deep learning development/deployment on
 
 - [Run this sample](#run)
 - [What does run.py do?](#example)
+- [Running the web interface](#run_web)
 - [How is the code laid out?](#code)
 - [Notes and troubleshooting](#troubleshooting)
 - [More Ideas and Functionality](#ideas)
@@ -42,7 +43,7 @@ This repo contains a simple workflow for deep learning development/deployment on
     ```
     az account set --subscription <id>
     ```
-    AZURE_SUBSCRIPTION_ID = {id}  
+    AZURE_SUBSCRIPTION_ID = id  
     ```
     az ad sp create-for-rbac --name ServicePrincipalName --password PASSWORD
     ```
@@ -66,15 +67,42 @@ This repo contains a simple workflow for deep learning development/deployment on
 
    Creates linux vm (Canonical UbuntuServer 16.04-LTS). VM image reference has been hard-coded in `managevm.py`.  
    
-   If you would like to create a VM from a customized image, call `deploy(image, group)` with 2 parameters: *image name* and *image resource group name*.
+   If you would like to create a VM from a customized image, call `deployer.deploy(image, group)` specifying *image* name and the *group* the image belongs to.
    
-   When the virtual machine is created, it will provide the public address for you to ssh into the vm.
+   When the virtual machine is created, it will provide the public address for you to `ssh` into the vm.
 
 1. Mounts file share.
   
    `deploy()` also mounts a default *fileshare* which you can find in `/mnt/fileshare/` on the virtual machine.  
    
-   If you would like to mount a specific fileshare in the same storage account, call `mount_shares(filesharename)` specifying the fileshare you would like to mount. Likewise, you will be able to find the share in `/mnt/filesharename/`.
+   If you would like to mount a specific fileshare in the same storage account, call `mount_shares(filesharename)` specifying the fileshare you would like to mount. Likewise, you will be able to find the share in `/mnt/{filesharename}/`.
+
+1. Tunnel Forwarding.
+
+   `deployer.tunnelforwarding()` links local port *8880* to port *8889* on the virtual machine.
+
+<a id="run_web"></a>
+## Running the web interface
+
+In your terminal run:
+```
+python run_web.py <Azure credentials file>
+```
+Open your browser and go to:
+```
+localhost:1048
+```
+1. `hello()`
+
+   The main page:   
+     * allows you to **create** and deploy a new vm (similar to running run.py).
+     * lists existing vms to manage.
+     
+1. `manage_virtualmachine(vm)`
+
+    Allows you to:
+      * run virual machines.
+      * mount specific fileshares.
 
 <a id="code"></a>
 ## Code layout
@@ -117,4 +145,4 @@ curl -O https://repo.continuum.io/archive/Anaconda3-5.0.1-Linux-x86_64.sh
 chmod +x Anaconda3-5.0.1-Linux-x86_64.sh
 bash Anaconda3-5.0.1-Linux-x86_64.sh
 ```
-Follow the installation steps and set the PATH. Now when you run python, it should return python 3.
+Follow the installation steps and set the PATH. Now when you run `python`, it should return python 3.
