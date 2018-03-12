@@ -134,8 +134,7 @@ localhost:1048
 <a id="troubleshooting"></a>
 ## Notes and Troubleshooting
 
-#####Mounting new **data disk**  
-A step by step guide can be found [here](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/add-disk#connect-to-the-linux-vm-to-mount-the-new-disk)  
+Mounting new **data disk**:  A step by step guide can be found [here](https://docs.microsoft.com/en-us/azure/virtual-machines/linux/add-disk#connect-to-the-linux-vm-to-mount-the-new-disk)  
 
 Kaggle command line tool for data download can be found [here](https://github.com/floydwch/kaggle-cli)
 
