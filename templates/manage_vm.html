@@ -15,7 +15,6 @@
   <br>
   <button type="submit" class="btn btn-default btn-block" name="start">Start VM</button>
   <button type="submit" class="btn btn-default btn-block" name="stop">Stop VM</button>
-  <button type="submit" class="btn btn-default btn-block" name="deallocate">Deallocate VM</button>
   
   {% if ipaddr %}
   <h3>Starting {{ vm }} VM...</h3>
@@ -23,10 +22,17 @@
     VM available at IP Address: {{ ipaddr }} <br>
     ssh into the vm with azureadminuser@{{ ipaddr }} and password (Azureadminpw1) <br>
     On Azure server, run jupyter notebook: nohup jupyter notebook --no-browser --port=8889& <br>
-    On your local machine, enable local port forward: ssh -N -f -L localhost:8888:localhost:8889 azureadminuser@{{ ipaddr }} <br>
+<!--     On your local machine, enable local port forward: ssh -N -f -L localhost:8888:localhost:8889 azureadminuser@{{ ipaddr }} <br> -->
+    Choose a dataset fileshare to mount on your server.
     Then you are ready to do some hands-on deep learning tasks! Woohoo!
   </p>
-  <a class="btn btn-success btn-block" href="http://0.0.0.0:8888/" target="_blank">Open Jupyter Notebook</a>
+  <h4>Available file shares: </h4>
+  <div class="list-group">
+  {% for share in filesharelist %}
+      <button type="submit" class="btn btn-default btn-block" value="{{share}}"" name="mount">{{ share }}</button>
+  {% endfor %}
+  </div>
+  <a class="btn btn-success btn-block" href="http://0.0.0.0:8880/" target="_blank">Open Jupyter Notebook</a>
 <!--   <button href="http://0.0.0.0:8888/" target="_blank" type="submit" class="btn btn-default btn-block" name="opennotebook">Open Jupyter Notebook</button> -->
   {% endif %}
 

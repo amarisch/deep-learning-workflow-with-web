@@ -3,8 +3,9 @@ import io
 import subprocess
 import sys
 from contextlib import contextmanager
+import traceback
 
-from sshtunnel import SSHTunnelForwarder
+from sshtunnel import SSHTunnelForwarder, HandlerSSHTunnelForwarderError
 from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.compute import ComputeManagementClient
 
@@ -58,7 +59,6 @@ class VirtualMachineDeployer(object):
 	def get_key_path(self):
 		return os.path.join(os.environ['HOME'], '.ssh', 'id_rsa')
 
-	# TODO user name
 	def master_ssh_login(self):
 		return '{}@{}'.format(
 			self.username,
@@ -145,7 +145,7 @@ class VirtualMachineDeployer(object):
 		For docs on how this is done, see:
 		https://docs.microsoft.com/en-us/azure/container-service/container-service-dcos-fileshare
 		"""
-		print('Mounting file share on all machines in cluster...')
+		print('Mounting file share on VM')
 		key_file = os.path.basename(self.get_key_path())
 		with io.open(os.path.join(SCRIPTS_DIR, 'cifsMountTemplate.sh')) as cifsMount_template, \
 			 io.open(os.path.join(SCRIPTS_DIR, 'cifsMount.sh'), 'w', newline='\n') as cifsMount:
@@ -176,9 +176,6 @@ class VirtualMachineDeployer(object):
 			proc.stdin.write('chmod 600 {}\n'.format(key_file).encode('ascii'))
 			proc.stdin.write(b'eval ssh-agent -s\n')
 			proc.stdin.write('ssh-add {}\n'.format(key_file).encode('ascii'))
-			proc.stdin.write('source ~/.bashrc\n'.encode('ascii'))
-			jupyter_cmd = 'nohup jupyter notebook --port=8889 --notebook-dir=notebook&\n'
-			proc.stdin.write(jupyter_cmd.encode('ascii'))
 			mountShares_cmd = 'sh mountShares.sh\n'
 			print('mounting fileshare...')
 			print('Running mountShares on remote master. Cmd:', mountShares_cmd, sep='\n')
@@ -190,11 +187,30 @@ class VirtualMachineDeployer(object):
 
 
 	def deploy(self):
-		#start_vm(self.compute, self.resources.group_name, self.vm_name)
+		start_vm(self.compute, self.resources.group.name, self.vm_name)
+
+	def mount_n_tunnel(self, sharename):
+		self.mount_shares(sharename)
+		self.tunnelforwarding()
+
+	def deploy_new(self):
+		create_vm(self.resources.group.name, self.storage.account.name, self.compute, self.network, self.vm_name)
 		self.mount_shares()
 		self.tunnelforwarding()
-		self.storage.upload_file('test.txt')
-		return
+
+	def stop(self):
+		deallocate_vm(self.compute, self.resources.group.name, self.vm_name)	
+
+
+	def list_shares(self):
+		shares = self.storage.list_shares()
+		result = {}
+		for share in shares:
+			result[share] = self.storage.list_directories_and_files(share)
+		return result
+
+	def upload_file(self, path, sharename=None):
+		self.storage.upload_file(path, sharename)
 
 	def public_ip(self):
 		public_ip_address = self.network.public_ip_addresses.get(self.resources.group_name, self.vm_name)

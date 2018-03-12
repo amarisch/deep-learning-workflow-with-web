@@ -34,6 +34,10 @@ class StorageHelper(object):
         self._key = os.environ.get('AZURE_STORAGE_KEY')
         self.resource_helper = resource_helper
         self.client = StorageManagementClient(*client_data)
+        self.file_service = FileService(
+            account_name=self.account.name,
+            account_key=self.key,
+        )
 
     @property
     def account(self):
@@ -84,19 +88,37 @@ class StorageHelper(object):
             self._key = next(iter(storage_keys.keys)).value
         return self._key
 
-    def upload_file(self, path):
+    def upload_file(self, path, sharename):
         """Upload a file into the default share on the storage account.
         If the share doesn't exist, create it first.
         """
-        file_service = FileService(
-            account_name=self.account.name,
-            account_key=self.key,
-        )
-        file_service.create_share(self.default_share)
-        file_service.create_file_from_path(
-            self.default_share,
+
+        self.file_service.create_file_from_path(
+            self.default_share if sharename is None else sharename,
             None,
             os.path.basename(path),
             path,
         )
         return '/'.join([self.default_share, os.path.basename(path)])
+
+    def download_file(self, sharename, filename):
+        file_service.get_file_to_path(sharename, None, filename, filename)
+
+    def delete_file(self, sharename, filename):
+        file_service.delete_file(sharename, None, filename)
+
+    def create_share(self, sharename):
+        self.file_service.create_share(sharename)
+
+    def create_directory(self, sharename, directoryname):
+        self.file_service.create_directory(sharename, directoryname)
+
+    def list_directories_and_files(self, sharename):
+        generator = self.file_service.list_directories_and_files(sharename)
+        return [file_or_dir.name for file_or_dir in generator]
+
+    def list_shares(self):
+        shares = list(self.file_service.list_shares(include_snapshots=True))
+        sharelist = [fileshare.name for fileshare in shares]
+        print (sharelist)
+        return sharelist

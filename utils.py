@@ -1,8 +1,12 @@
+from subprocess import call
+
 from azure.common.credentials import ServicePrincipalCredentials
 from azure.mgmt.resource import ResourceManagementClient
 from azure.mgmt.network import NetworkManagementClient
 from azure.mgmt.compute import ComputeManagementClient
 from azure.mgmt.storage import StorageManagementClient
+
+from prompt_toolkit import prompt
 
 class AzureClient(object):
     """An Azure client class that allows us to manage Azure services via AZure's python SDK:
@@ -29,6 +33,19 @@ def get_azure_client(filename):
     storage = StorageManagementClient(credentials, subscription_id)
     return AzureClient(subscription_id, resource, compute, network, storage)
 
+def get_credentials():
+    SUBSCRIPTION_ID = prompt('Enter your Subscription ID: ')
+    TENANT_ID = prompt('Enter your Tenant ID: ')
+    CLIENT_ID = prompt('Enter your Client/Service Principal Application ID: ')
+    CLIENT_SECRET = prompt('Enter your Service Principal password: ')
+
+    credentials = ServicePrincipalCredentials(
+        client_id=CLIENT_ID,
+        secret=CLIENT_SECRET,
+        tenant=TENANT_ID
+    )
+    return credentials, SUBSCRIPTION_ID
+
 def get_credentials_from_file(filename):
     with open(filename, 'r') as f:
         SUBSCRIPTION_ID = f.readline().strip()
@@ -43,12 +60,6 @@ def get_credentials_from_file(filename):
     )
     return credentials, SUBSCRIPTION_ID
 
-def list_available_vms(client):
-    vmlist = []
-    for group in client.resource.resource_groups.list():
-        vmlist.append(group.name)
-    return vmlist
-
 def list_available_datasets():
     datalist = [
                 ['Titanic', 'Simple Machine Learning Problem for disaster', 'https://www.kaggle.com/c/titanic'],
@@ -56,6 +67,11 @@ def list_available_datasets():
                 ['Speech Challenge', 'Hands-on Practice with Tensorflow', 'https://www.kaggle.com/c/tensorflow-speech-recognition-challenge'],
             ]
     return datalist
+
+def open_jupy_notebook(ipaddr):
+    return_code = call("echo Hello World", shell=True)
+    command = "ssh -N -f -L localhost:8888:localhost:8889 azureadminuser@" + ipaddr
+    return_code = call(command, shell=True)            
 
 def print_item(group):
     """Print a ResourceGroup instance."""
@@ -72,10 +88,3 @@ def print_properties(props):
         print("\t\tProvisioning State: {}".format(props.provisioning_state))
         print("\t\t{}".format(props.properties))
     print("\n\n")
-
-from subprocess import call
-
-def open_jupy_notebook(ipaddr):
-    return_code = call("echo Hello World", shell=True)
-    command = "ssh -N -f -L localhost:8888:localhost:8889 azureadminuser@" + ipaddr
-    return_code = call(command, shell=True)            

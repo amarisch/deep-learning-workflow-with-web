@@ -1,11 +1,6 @@
 from manageresource import *
 from managestorage import *
-# import azure.mgmt.storage.models
-# import azure.mgmt.storage.models.AccountType
-# import azure.mgmt.compute.models
-# import azure.mgmt.compute.models.VirtualMachineSizeTypes
-# import azure.mgmt.compute.models.CachingTypes
-# import azure.mgmt.compute.models.DiskCreateOptionTypes
+
 import azure.mgmt.storage
 import azure.mgmt.compute
 from azure.mgmt.storage.models import StorageAccountCreateParameters
@@ -14,6 +9,8 @@ from msrestazure.azure_exceptions import CloudError
 from azure.mgmt.compute import ComputeManagementClient
 import base64
 
+
+LOCATION = 'westus'
 
 VM_REFERENCE = {
     'linux': {
@@ -36,33 +33,6 @@ VM_REFERENCE = {
     }
 }
 
-# Create a Linux VM
-# The supplied password must be between 6-72 characters long 
-# and must satisfy at least 3 of password complexity requirements from the following: 
-# 1) Contains an uppercase character
-# 2) Contains a lowercase character
-# 3) Contains a numeric digit
-# 4) Contains a special character
-# 5) Control characters are not allowed
-# def create_linux_vm(network_client, compute_client, group_name, vm_name='myvm', username='myuser', pw='Mypassword1', location='westus'):
-
-# 	# create a NIC
-# 	nic = create_nic(network_client, group_name)
-
-# 	# Create Linux VM
-# 	print('\nCreating Linux Virtual Machine')
-# 	vm_parameters = create_vm_parameters(nic.id, VM_REFERENCE['linux'], vm_name, username, pw, location)
-# 	async_vm_creation = compute_client.virtual_machines.create_or_update(
-# 		group_name, vm_name, vm_parameters)
-# 	async_vm_creation.wait()
-# 	# TODO check that the VM has started
-
-def deallocate_vm(compute_client, group_name, vm_name):
-	# Deallocating the VM
-	print('\nDeallocating the VM')
-	async_vm_deallocate = compute_client.virtual_machines.deallocate(group_name, vm_name)
-	async_vm_deallocate.wait()
-
 def start_vm(compute_client, group_name, vm_name):
 	# Start the VM
 	print('\nStart VM')
@@ -81,25 +51,244 @@ def stop_vm(compute_client, group_name, vm_name):
 	async_vm_stop = compute_client.virtual_machines.power_off(group_name, vm_name)
 	async_vm_stop.wait()
 
+def deallocate_vm(compute_client, group_name, vm_name):
+	# Deallocating the VM
+	print('\nDeallocating the VM')
+	async_vm_deallocate = compute_client.virtual_machines.deallocate(group_name, vm_name)
+	async_vm_deallocate.wait()
+
 def delete_vm(compute_client, group_name, vm_name):
 	# Delete VM
 	print('\nDelete VM')
 	async_vm_delete = compute_client.virtual_machines.delete(group_name, vm_name)
 	async_vm_delete.wait()
 
-def attach_data_disk(compute_client, group_name, vm_name, data_disk_name):
-	disk = compute_client.disks.get(group_name, data_disk_name)
-	attach_data_disk(compute_client, group_name, vm_name, data_disk_name, disk.id)
+def create_nic(network_client, group_name, vnet_name, subnet_name, ip_name, \
+				nic_name, ip_config_name='default'):
+	"""Create a Network Interface for a VM.
+	"""
+	# Create VNet
+	print('\nCreate Vnet')
+	async_vnet_creation = network_client.virtual_networks.create_or_update(
+		group_name,
+		vnet_name,
+		{
+			'location': LOCATION,
+			'address_space': {
+				'address_prefixes': ['10.0.0.0/16']
+			}
+		}
+	)
+	async_vnet_creation.wait()
 
-def attach_data_disk(compute_client, group_name, vm_name, data_disk_name, data_disk_id):
+	# Create Subnet
+	print('\nCreate Subnet')
+	async_subnet_creation = network_client.subnets.create_or_update(
+		group_name,
+		vnet_name,
+		subnet_name,
+		{'address_prefix': '10.0.0.0/24'}
+	)
+	async_subnet_creation.wait()
+	subnet_info = network_client.subnets.get(group_name, vnet_name, subnet_name)
+
+
+	# Create public ip address
+	print('\nCreate Public IP Address')
+	result = network_client.public_ip_addresses.create_or_update(
+		group_name,
+		ip_name,
+		{	'location': LOCATION,
+			'public_ip_allocation_method': 'Dynamic',
+			'idle_timeout_in_minutes': 4
+		}
+	)
+	result.wait()
+	public_ip_address = network_client.public_ip_addresses.get(group_name, ip_name)
+	public_ip_id = public_ip_address.id
+
+	# Create NIC
+	print('\nCreate NIC')
+	async_nic_creation = network_client.network_interfaces.create_or_update(
+		group_name,
+		nic_name,
+		{
+			'location': location,
+			'ip_configurations': [{
+				'name': ip_config_name,
+				'subnet': {
+					'id': subnet_info.id
+				},
+				'public_ip_address': {
+					'id': public_ip_id
+				}
+			}]
+		}
+	)
+	async_nic_creation.wait()
+	result = network_client.network_interfaces.get(group_name, nic_name)
+	return result
+
+
+def create_vm_parameters(nic_id, vm_reference, vm_name, os_disk_name, username, pw, image, subscription_id, image_resource_group):
+	"""Create the VM parameters structure.
+	"""
+
+	# Customize VM creation using cloud config
+	custom_data = ''
+	with open('cloud-init.txt', 'r') as f:
+		custom_data=''.join(line for line in f)
+	print(custom_data)
+	custom_data = base64.b64encode(custom_data)
+
+	image_reference = ''
+	if not image is None:
+		image_id = '/subscriptions/{}/resourceGroups/{}/providers/Microsoft.Compute/images/{}'.format(subscription_id, image_resource_group, image)
+		image_reference = {
+							'id': image_id
+						}
+	else:
+		image_reference = {
+				'publisher': vm_reference['publisher'],
+				'offer': vm_reference['offer'],
+				'sku': vm_reference['sku'],
+				'version': vm_reference['version']
+		    }
+
+	return {
+		'location': LOCATION,
+		'os_profile': {
+			'computer_name': vm_name,
+			'admin_username': username,
+			'admin_password': pw,
+			'custom_data': custom_data
+		},
+		'hardware_profile': {
+			'vm_size': 'Standard_DS1_v2'
+		},
+		'storage_profile': {
+			'image_reference': image_reference,
+			'osDisk': {
+				'caching': 'ReadWrite',
+				'managedDisk': {
+					'storageAccountType': 'Standard_LRS'
+				},
+				'name': os_disk_name,
+				'createOption': 'FromImage'
+			}
+		},
+		# If using image from Microsoft marketplace, uncomment this section
+		# Run this command to find out plan information:
+		# az vm image accept-terms --urn microsoft-ads:linux-data-science-vm-ubuntu:linuxdsvmubuntu:1.1.7
+	  #   'plan': {
+			# 'name': vm_reference['sku'],
+			# 'product': vm_reference['offer'],
+			# 'publisher': vm_reference['publisher'],
+	  #   },
+		'network_profile': {
+			'network_interfaces': [{
+				'id': nic_id,
+			}]
+		},
+	}
+
+# Creates vm
+# fill in fields (image, subscription_id and image_resource_group) if creating a vm from an image
+def create_vm(group_name, storage_name, compute_client, network_client, basename, image=None, subscription_id=None, image_resource_group=None):
+
+	BASE_NAME = basename
+	VIRTUAL_NETWORK_NAME = BASE_NAME
+	SUBNET_NAME = BASE_NAME
+	NETWORK_INTERFACE_NAME = BASE_NAME
+	PUBLIC_IP_NAME = BASE_NAME
+
+	# VM USER PASSWORD REQUIREMENTS:
+	# The supplied password must be between 6-72 characters long 
+	# and must satisfy at least 3 of password complexity requirements from the following: 
+	# 1) Contains an uppercase character
+	# 2) Contains a lowercase character
+	# 3) Contains a numeric digit
+	# 4) Contains a special character
+	# 5) Control characters are not allowed
+
+	ADMIN_USERNAME='azureadminuser'
+	ADMIN_PASSWORD='Azureadminpw1'
+
+	VM_NAME = BASE_NAME
+	OS_DISK_NAME = BASE_NAME
+	DATA_DISK_NAME = BASE_NAME
+
+	# Create the network interface using a helper function (defined below)
+	nic = create_nic(network_client, group_name, VIRTUAL_NETWORK_NAME, SUBNET_NAME, PUBLIC_IP_NAME, \
+				NETWORK_INTERFACE_NAME, 'default', LOCATION)
+	nic = network_client.network_interfaces.get(group_name, NETWORK_INTERFACE_NAME)
+
+	# Create the virtual machine
+	print('\nCreating Linux Virtual Machine')
+	vm_parameters = create_vm_parameters(nic.id, VM_REFERENCE['linux'], VM_NAME, OS_DISK_NAME, ADMIN_USERNAME, ADMIN_PASSWORD, image, subscription_id, image_resource_group)
+	async_vm_creation = compute_client.virtual_machines.create_or_update(
+		group_name, VM_NAME, vm_parameters)
+	async_vm_creation.wait()
+
+	# Display the public ip address
+	# You can now connect to the machine using SSH
+	public_ip_address = network_client.public_ip_addresses.get(GROUP_NAME, PUBLIC_IP_NAME)
+	print('VM available at {}'.format(public_ip_address.ip_address))
+	print('ssh into the vm with {}@{} and password ({})'.format(ADMIN_USERNAME, public_ip_address.ip_address, ADMIN_PASSWORD))
+
+
+"""
+	VM Disk operations
+"""
+# Creates a data disk
+# input: data_disk_name
+#		 disk_size (in gigabytes)
+def create_empty_data_disk(compute_client, group_name, data_disk_name, disk_size=10):
+	# Create managed data disk
+	print('\nCreate managed Data Disk')
+	async_disk_creation = compute_client.disks.create_or_update(
+	    group_name,
+	    data_disk_name,
+	    {
+			'location': LOCATION,
+			'disk_size_gb': disk_size,
+			'creation_data': {
+				'create_option': 'Empty'
+			}
+		}
+	)
+	data_disk = async_disk_creation.result()
+	return data_disk.id
+
+def create_data_disk_from_copy(compute_client, group_name, data_disk_name, subscription_id, source_resource_group, source_disk_name):
+	# Create managed data disk
+	print('\nCreate managed Data Disk')
+	source_disk_id = "/subscriptions/{}/resourceGroups/{}/providers/Microsoft.Compute/disks/{}".format( \
+						subscription_id, source_resource_group, source_disk_name)
+	async_disk_creation = compute_client.disks.create_or_update(
+		group_name,
+		data_disk_name,
+		{
+			'location': LOCATION,
+			'creation_data': {
+				"createOption": "Copy",
+				"sourceResourceId": source_disk_id
+			}
+		}
+	)
+	data_disk = async_disk_creation.result()
+	return data_disk.id
+
+def attach_data_disk(compute_client, group_name, vm_name, data_disk_name):
 	print('\nAttach Data Disk')
+	disk = compute_client.disks.get(group_name, data_disk_name)
 	virtual_machine = compute_client.virtual_machines.get(group_name, vm_name)
 	virtual_machine.storage_profile.data_disks.append({
 		'lun': 12,
 		'name': data_disk_name,
 		'create_option': 'Attach',
 		'managed_disk': {
-			'id': data_disk_id
+			'id': disk.id
 		}
 	})
 	async_disk_attach = compute_client.virtual_machines.create_or_update(
@@ -142,17 +331,28 @@ def increase_os_disk_size(compute_client, group_name, vm_name, additional_os_dis
 	)
 	async_disk_update.wait()
 
-def list_vm_in_subscription(compute_client):
-	# List VMs in subscription
-	print('\nList VMs in subscription')
-	for vm in compute_client.virtual_machines.list_all():
-		print("\tVM: {}".format(vm.name))
 
-def list_vm_in_resource_group(compute_client, group_name):
-	print('\nList VMs in resource group')
-	for vm in compute_client.virtual_machines.list(group_name):
+"""
+	Get information related to VMs
+"""
+
+def list_vm_in_subscription(credentials, subscription_id):
+	# List VMs in subscription
+	compute = ComputeManagementClient(credentials, subscription_id)
+	vmlist = []
+	for vm in compute.virtual_machines.list_all():
+		vmlist.append(vm.name)
+	return vmlist
+
+def list_vm_in_resource_group(credentials, subscription_id, group_name):
+	# List VMs in resource group
+	compute = ComputeManagementClient(credentials, subscription_id)
+	vmlist = []
+	for vm in compute.virtual_machines.list(group_name):
+		vmlist.append(vm)
 		print("\tVM: {}".format(vm.name))
 		print("\t    {}".format(vm))	
+	return vmlist
 
 def get_vm_ip_address(network_client, group_name, vm_name):
 	public_ip_address = network_client.public_ip_addresses.get(group_name, vm_name)
@@ -168,269 +368,6 @@ def get_vm_status(compute_client, group_name, vm_name):
     available so the decorator will bang on it forever
     '''
     return compute_client.virtual_machines.get(group_name, vm_name, expand = 'instanceview')
-
-
-# TODO error handling when something has ben created already
-def create_nic(network_client, group_name, vnet_name='myvnet', subnet_name='mysubnet', ip_name='myip',\
-				nic_name='mynic', ip_config_name='default', location='westus'):
-	"""Create a Network Interface for a VM.
-	"""
-	# Create VNet
-	print('\nCreate Vnet')
-	async_vnet_creation = network_client.virtual_networks.create_or_update(
-		group_name,
-		vnet_name,
-		{
-			'location': location,
-			'address_space': {
-				'address_prefixes': ['10.0.0.0/16']
-			}
-		}
-	)
-	async_vnet_creation.wait()
-
-	# Create Subnet
-	print('\nCreate Subnet')
-	async_subnet_creation = network_client.subnets.create_or_update(
-		group_name,
-		vnet_name,
-		subnet_name,
-		{'address_prefix': '10.0.0.0/24'}
-	)
-	async_subnet_creation.wait()
-	subnet_info = network_client.subnets.get(group_name, vnet_name, subnet_name)
-
-
-	# Create public ip address
-	print('\nCreate Public IP Address')
-	result = network_client.public_ip_addresses.create_or_update(
-		group_name,
-		ip_name,
-		{	'location': location,
-			'public_ip_allocation_method': 'Dynamic',
-			'idle_timeout_in_minutes': 4
-		}
-	)
-	result.wait()
-	public_ip_address = network_client.public_ip_addresses.get(group_name, ip_name)
-	public_ip_id = public_ip_address.id
-
-	# Create NIC
-	print('\nCreate NIC')
-	async_nic_creation = network_client.network_interfaces.create_or_update(
-		group_name,
-		nic_name,
-		{
-			'location': location,
-			'ip_configurations': [{
-				'name': ip_config_name,
-				'subnet': {
-					'id': subnet_info.id
-				},
-				'public_ip_address': {
-					'id': public_ip_id
-				}
-			}]
-		}
-	)
-	async_nic_creation.wait()
-	result = network_client.network_interfaces.get(group_name, nic_name)
-	return result
-
-def create_vm_parameters(nic_id, vm_reference, vm_name, os_disk_name, username, pw, location):
-	"""Create the VM parameters structure.
-	"""
-	custom_data = ''
-	with open('cloud-init.txt', 'r') as f:
-		custom_data=''.join(line for line in f)
-	print(custom_data)
-	custom_data = base64.b64encode(custom_data)
-
-	return {
-		'location': location,
-		'os_profile': {
-			'computer_name': vm_name,
-			'admin_username': username,
-			'admin_password': pw,
-			'custom_data': custom_data
-		},
-		'hardware_profile': {
-			'vm_size': 'Standard_DS1_v2'
-		},
-		'storage_profile': {
-			'image_reference': {
-				'publisher': vm_reference['publisher'],
-				'offer': vm_reference['offer'],
-				'sku': vm_reference['sku'],
-				'version': vm_reference['version']
-		    },
-			# 'osDisk': {
-			# 	'caching': 'ReadWrite',
-			# 	'managedDisk': {
-			# 		'storageAccountType': 'Standard_LRS'
-			# 	},
-			# 	'name': os_disk_name,
-			# 	'createOption': 'FromImage'
-			# }
-		},
-		# az vm image accept-terms --urn microsoft-ads:linux-data-science-vm-ubuntu:linuxdsvmubuntu:1.1.7
-	  #   'plan': {
-			# 'name': vm_reference['sku'],
-			# 'product': vm_reference['offer'],
-			# 'publisher': vm_reference['publisher'],
-	  #   },
-		'network_profile': {
-			'network_interfaces': [{
-				'id': nic_id,
-			}]
-		},
-	}
-
-# {
-#   "location": "westus",
-#   "properties": {
-#     "hardwareProfile": {
-#       "vmSize": "Standard_D1_v2"
-#     },
-#     "storageProfile": {
-#       "imageReference": {
-#         "id": "/subscriptions/{subscription-id}/resourceGroups/myResourceGroup/providers/Microsoft.Compute/images/{existing-custom-image-name}"
-#       },
-#       "osDisk": {
-#         "caching": "ReadWrite",
-#         "managedDisk": {
-#           "storageAccountType": "Standard_LRS"
-#         },
-#         "name": "myVMosdisk",
-#         "createOption": "FromImage"
-#       }
-
-#     },
-#     "osProfile": {
-#       "adminUsername": "{your-username}",
-#       "computerName": "myVM",
-#       "adminPassword": "{your-password}"
-#     },
-#     "networkProfile": {
-#       "networkInterfaces": [
-#         {
-#           "id": "/subscriptions/{subscription-id}/resourceGroups/myResourceGroup/providers/Microsoft.Network/networkInterfaces/{existing-nic-name}",
-#           "properties": {
-#             "primary": true
-#           }
-#         }
-#       ]
-#     }
-#   },
-#   "name": "myVM"
-# }
-
-# create a vm with empty data disk
-# {
-#   "location": "westus",
-#   "properties": {
-#     "hardwareProfile": {
-#       "vmSize": "Standard_D2_v2"
-#     },
-#     "storageProfile": {
-#       "imageReference": {
-#         "sku": "2016-Datacenter",
-#         "publisher": "MicrosoftWindowsServer",
-#         "version": "latest",
-#         "offer": "WindowsServer"
-#       },
-#       "osDisk": {
-#         "caching": "ReadWrite",
-#         "managedDisk": {
-#           "storageAccountType": "Standard_LRS"
-#         },
-#         "name": "myVMosdisk",
-#         "createOption": "FromImage"
-#       },
-#       "dataDisks": [
-#         {
-#           "diskSizeGB": 1023,
-#           "createOption": "Empty",
-#           "lun": 0
-#         },
-#         {
-#           "diskSizeGB": 1023,
-#           "createOption": "Empty",
-#           "lun": 1
-#         }
-#       ]
-#     },
-#     "osProfile": {
-#       "adminUsername": "{your-username}",
-#       "computerName": "myVM",
-#       "adminPassword": "{your-password}"
-#     },
-#     "networkProfile": {
-#       "networkInterfaces": [
-#         {
-#           "id": "/subscriptions/{subscription-id}/resourceGroups/myResourceGroup/providers/Microsoft.Network/networkInterfaces/{existing-nic-name}",
-#           "properties": {
-#             "primary": true
-#           }
-#         }
-#       ]
-#     }
-#   },
-#   "name": "myVM"
-# }
-
-def create_vm(resource_client, compute_client, network_client, storage_client, basename, vmoption):
-
-	BASE_NAME = basename
-	GROUP_NAME = BASE_NAME
-	STORAGE_NAME = BASE_NAME
-	VIRTUAL_NETWORK_NAME = BASE_NAME
-	SUBNET_NAME = BASE_NAME
-	NETWORK_INTERFACE_NAME = BASE_NAME
-	VM_NAME = BASE_NAME
-	OS_DISK_NAME = BASE_NAME
-	DATA_DISK_NAME = BASE_NAME
-	PUBLIC_IP_NAME = BASE_NAME
-	COMPUTER_NAME = BASE_NAME
-	ADMIN_USERNAME='azureadminuser'
-	ADMIN_PASSWORD='Azureadminpw1'
-	REGION = 'westus'
-
-	# # 1. Create a resource group
-	# result = create_resource_group(resource_client, GROUP_NAME)
-
-	# # 2. Create Azure storage account
-	# create_storage_account(storage_client, GROUP_NAME, STORAGE_NAME)
-
-	# # 3. Create the network interface using a helper function (defined below)
-	# nic = create_nic(network_client, GROUP_NAME, VIRTUAL_NETWORK_NAME, SUBNET_NAME, PUBLIC_IP_NAME, \
-	# 			NETWORK_INTERFACE_NAME, 'default', REGION)
-	nic = network_client.network_interfaces.get(GROUP_NAME, NETWORK_INTERFACE_NAME)
-
-	# 4. Create the virtual machine
-	print('\nCreating Linux Virtual Machine')
-	vm_parameters = create_vm_parameters(nic.id, VM_REFERENCE['linux'], VM_NAME, OS_DISK_NAME, ADMIN_USERNAME, ADMIN_PASSWORD, REGION)
-	async_vm_creation = compute_client.virtual_machines.create_or_update(
-		GROUP_NAME, VM_NAME, vm_parameters)
-	async_vm_creation.wait()
-
-	# # 4. Attach data disk
-	# print('\nCreate data disk and attach to VM')
-	# data_disk_id = create_data_disk(compute_client, GROUP_NAME, datadisk_type, DATA_DISK_NAME, 15)
-	# attach_data_disk(compute_client, GROUP_NAME, VM_NAME, DATA_DISK_NAME, data_disk_id)
-
-
-	# Display the public ip address
-	# You can now connect to the machine using SSH
-	public_ip_address = network_client.public_ip_addresses.get(GROUP_NAME, PUBLIC_IP_NAME)
-	print('VM available at {}'.format(public_ip_address.ip_address))
-	print('ssh into the vm with {}@{} and password ({})'.format(ADMIN_USERNAME, public_ip_address.ip_address, ADMIN_PASSWORD))
-	print('Run jupyter notebook: jupyter notebook --no-browser --port=8889')
-	print('Enable local port forward: ssh -N -f -L localhost:8888:localhost:8889 {}@{}'.format(ADMIN_USERNAME, public_ip_address.ip_address))
-
-# TODO
-def create_vm_from_image():
-	return
 
 def get_vm(compute_client, group_name, vm_name):
     vm = compute_client.virtual_machines.get(group_name, vm_name, expand='instanceView')
@@ -450,19 +387,9 @@ def get_vm(compute_client, group_name, vm_name):
     print("\nosProfile")
     print("  computerName: ", vm.os_profile.computer_name)
     print("  adminUsername: ", vm.os_profile.admin_username)
-    #print("  provisionVMAgent: {0}".format(vm.os_profile.windows_configuration.provision_vm_agent))
-    #print("  enableAutomaticUpdates: {0}".format(vm.os_profile.windows_configuration.enable_automatic_updates))
     print("\nnetworkProfile")
     for nic in vm.network_profile.network_interfaces:
         print("  networkInterface id: ", nic.id)
-    print("\nvmAgent")
-    print("  vmAgentVersion", vm.instance_view.vm_agent.vm_agent_version)
-    # print("    statuses")
-    # for stat in vm_result.instance_view.vm_agent.statuses:
-    #     print("    code: ", stat.code)
-    #     print("    displayStatus: ", stat.display_status)
-    #     print("    message: ", stat.message)
-    #     print("    time: ", stat.time)
     print("\ndisks");
     for disk in vm.instance_view.disks:
         print("  name: ", disk.name)
