@@ -184,7 +184,7 @@ Follow the installation steps and set the PATH. Now when you run `python`, it sh
    ```
    c.NotebookApp.token = ''              # don't require a security token
    ```
-   You can follow the instructions [here](http://blog.lerner.co.il/five-minute-guide-setting-jupyter-notebook-server/) to configure your jupyter notebook server. There is also a sample [`jupyter_notebook_config.py`](jupyter_notebook_config.py) file in the repo.
+   There is a sample [`jupyter_notebook_config.py`](jupyter_notebook_config.py) file in the repo.
    
    Make a notebook directory to launch the jupyter notebook server
    ```
