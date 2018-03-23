@@ -3,6 +3,8 @@
 
 This repo contains a simple workflow for deep learning development/deployment on Azure using python SDK. You will be able to easily set up a deep learning development environment with access to Azure file where you can preload and share datasets.
 
+[![IMAGE ALT TEXT](http://img.youtube.com/vi/IbnmoBX21n8/0.jpg)](http://www.youtube.com/watch?v=IbnmoBX21n8 "Video Title")
+
 **On this page**
 
 - [Run this sample](#run)
