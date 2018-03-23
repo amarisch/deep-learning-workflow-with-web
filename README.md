@@ -87,6 +87,7 @@ This repo contains a simple workflow for deep learning development/deployment on
 <a id="run_web"></a>
 ## Running the web interface
 
+#### Watch a video of how it works:
 [![IMAGE ALT TEXT](http://img.youtube.com/vi/IbnmoBX21n8/0.jpg)](http://www.youtube.com/watch?v=IbnmoBX21n8 "Video Title")
 
 In your terminal run:
@@ -110,6 +111,22 @@ localhost:1048
 
 <a id="code"></a>
 ## Code Layout and Additional Functionalities
+
+#### Main Component  
+|--- virtualmachinedeployer.py  
+|--- helpers  
+|---------- compute_helper.py  
+|---------- resource_helper.py  
+|---------- storage_helper.py  
+        
+|--- run.py  
+|--- run_web.py  
+|--- utils.py  
+|--- Forms.py  
+|--- scripts  
+|---------- cifsMountTemplate.sh  
+|---------- cifsUnmountTemplate.sh  
+|---------- mountShares.sh  
 
 **helpers** directory contains various helper class used by [`VirtualMachineDeployer`](virtualmachinedeployer.py) class
    - [`ComputeHelper`](helpers/compute_helper.py)
