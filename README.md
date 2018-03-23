@@ -112,13 +112,14 @@ localhost:1048
 <a id="code"></a>
 ## Code Layout and Additional Functionalities
 
-#### Main Component  
+##### Main Components  
 |--- virtualmachinedeployer.py  
 |--- helpers  
 |---------- compute_helper.py  
 |---------- resource_helper.py  
 |---------- storage_helper.py  
         
+##### Other Components  
 |--- run.py  
 |--- run_web.py  
 |--- utils.py  
