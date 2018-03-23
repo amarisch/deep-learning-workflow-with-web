@@ -86,68 +86,65 @@ class ComputeHelper(object):
         ip_config_name = 'default'
         location = self.resource_helper.group.location
 
-        nic = self.network.network_interfaces.get(group_name, self.name)
-        if not nic:  
+        # Create VNet
+        print('\nCreate Vnet')
+        async_vnet_creation = self.network.virtual_networks.create_or_update(
+            group_name,
+            vnet_name,
+            {
+                'location': location,
+                'address_space': {
+                    'address_prefixes': ['10.0.0.0/16']
+                }
+            }
+        )
+        async_vnet_creation.wait()
 
-            # Create VNet
-            print('\nCreate Vnet')
-            async_vnet_creation = self.network.virtual_networks.create_or_update(
-                group_name,
-                vnet_name,
-                {
-                    'location': location,
-                    'address_space': {
-                        'address_prefixes': ['10.0.0.0/16']
+        # Create Subnet
+        print('\nCreate Subnet')
+        async_subnet_creation = self.network.subnets.create_or_update(
+            group_name,
+            vnet_name,
+            subnet_name,
+            {'address_prefix': '10.0.0.0/24'}
+        )
+        async_subnet_creation.wait()
+        subnet_info = self.network.subnets.get(group_name, vnet_name, subnet_name)
+
+
+        # Create public ip address
+        print('\nCreate Public IP Address')
+        result = self.network.public_ip_addresses.create_or_update(
+            group_name,
+            ip_name,
+            {   'location': location,
+                'public_ip_allocation_method': 'Dynamic',
+                'idle_timeout_in_minutes': 4
+            }
+        )
+        result.wait()
+        public_ip_address = self.network.public_ip_addresses.get(group_name, ip_name)
+        public_ip_id = public_ip_address.id
+
+        # Create NIC
+        print('\nCreate NIC')
+        async_nic_creation = self.network.network_interfaces.create_or_update(
+            group_name,
+            nic_name,
+            {
+                'location': location,
+                'ip_configurations': [{
+                    'name': ip_config_name,
+                    'subnet': {
+                        'id': subnet_info.id
+                    },
+                    'public_ip_address': {
+                        'id': public_ip_id
                     }
-                }
-            )
-            async_vnet_creation.wait()
-
-            # Create Subnet
-            print('\nCreate Subnet')
-            async_subnet_creation = self.network.subnets.create_or_update(
-                group_name,
-                vnet_name,
-                subnet_name,
-                {'address_prefix': '10.0.0.0/24'}
-            )
-            async_subnet_creation.wait()
-            subnet_info = self.network.subnets.get(group_name, vnet_name, subnet_name)
-
-
-            # Create public ip address
-            print('\nCreate Public IP Address')
-            result = self.network.public_ip_addresses.create_or_update(
-                group_name,
-                ip_name,
-                {   'location': location,
-                    'public_ip_allocation_method': 'Dynamic',
-                    'idle_timeout_in_minutes': 4
-                }
-            )
-            result.wait()
-            public_ip_address = self.network.public_ip_addresses.get(group_name, ip_name)
-            public_ip_id = public_ip_address.id
-
-            # Create NIC
-            print('\nCreate NIC')
-            async_nic_creation = self.network.network_interfaces.create_or_update(
-                group_name,
-                nic_name,
-                {
-                    'location': location,
-                    'ip_configurations': [{
-                        'name': ip_config_name,
-                        'subnet': {
-                            'id': subnet_info.id
-                        },
-                        'public_ip_address': {
-                            'id': public_ip_id
-                        }
-                    }]
-                }
-            )
-            async_nic_creation.wait()
+                }]
+            }
+        )
+        async_nic_creation.wait()
 
     def create_vm_parameters(self, vm_reference, username, pw, image, image_resource_group):
         """Create the VM parameters structure.
@@ -156,10 +153,10 @@ class ComputeHelper(object):
         nic = self.network.network_interfaces.get(self.resource_helper.group.name, self.name)
 
         # Customize VM creation using cloud config
-        custom_data = ''
-        with open('cloud-init.txt', 'r') as f:
-            custom_data=''.join(line for line in f)
-        custom_data = base64.b64encode(custom_data)
+        # custom_data = b''
+        # with open('cloud-init.txt', 'r') as f:
+        #     custom_data=bytes(''.join(line for line in f), 'utf-8')
+        # custom_data = base64.b64encode(custom_data)
 
         image_reference = ''
         if not image is None:
@@ -181,7 +178,8 @@ class ComputeHelper(object):
                 'computer_name': self.name,
                 'admin_username': username,
                 'admin_password': pw,
-                'custom_data': custom_data
+                # uncomment this line to enable cloud config
+                # 'custom_data': custom_data
             },
             'hardware_profile': {
                 'vm_size': 'Standard_DS1_v2'

@@ -24,6 +24,7 @@ class VirtualMachineDeployer(object):
 
 		self.username = username
 		self.password = password
+		self.fileshares = []
 
 
 	def _format_proc_output(self, header, output):
@@ -71,6 +72,8 @@ class VirtualMachineDeployer(object):
 				'-p',
 				self.password,
 				'scp',
+				'-o', 
+				'StrictHostKeyChecking=no',
 				local_path,
 				'{}:./{}'.format(address, remote_path)
 			])
@@ -131,6 +134,7 @@ class VirtualMachineDeployer(object):
 						storageacct_password=self.storage.key,
 					)
 				)
+				self.fileshares.append(sharename)
 			else:
 				cifsMount.write(
 					cifsMount_template.read().format(
@@ -140,6 +144,7 @@ class VirtualMachineDeployer(object):
 						storageacct_password=self.storage.key,
 					)
 				)
+				self.fileshares.append('share')
 		self.scp_to_master(os.path.join(SCRIPTS_DIR, 'cifsMount.sh'), '')
 		self.scp_to_master(os.path.join(SCRIPTS_DIR, 'mountShares.sh'), '')
 		self.scp_to_master(self.get_key_path(), key_file)
@@ -157,6 +162,33 @@ class VirtualMachineDeployer(object):
 		print('Finished mounting shares.')
 		self._format_proc_output('Stdout:', out)
 		self._format_proc_output('Stderr:', err)
+		print("from mount def" + str(self.fileshares))
+
+	def unmount_share(self, sharename):
+		key_file = os.path.basename(self.get_key_path())
+		with io.open(os.path.join(SCRIPTS_DIR, 'cifsUnmountTemplate.sh')) as cifsUnmount_template, \
+			 io.open(os.path.join(SCRIPTS_DIR, 'cifsUnmount.sh'), 'w', newline='\n') as cifsUnmount:
+			cifsUnmount.write(
+				cifsUnmount_template.read().format(
+					sharename=sharename,
+				)
+			)
+			self.fileshares.remove(sharename)
+		self.scp_to_master(os.path.join(SCRIPTS_DIR, 'cifsUnmount.sh'), '')
+		self.scp_to_master(self.get_key_path(), key_file)
+		with self.cluster_ssh() as proc:
+			print('ssh to the vm...')
+			print('chmod')
+			proc.stdin.write('chmod 600 {}\n'.format(key_file).encode('ascii'))
+			proc.stdin.write(b'eval ssh-agent -s\n')
+			proc.stdin.write('ssh-add {}\n'.format(key_file).encode('ascii'))
+			umount_cmd = 'sh cifsUnmount.sh\n'
+			print('Umount. Cmd:', umount_cmd, sep='\n')
+			proc.stdin.write(umount_cmd.encode('ascii'))
+			out, err = proc.communicate(input=b'exit\n')
+		print('Finished unmount.')
+		self._format_proc_output('Stdout:', out)
+		self._format_proc_output('Stderr:', err)
 
 	def mount_n_tunnel(self, sharename):
 		self.mount_shares(sharename)
@@ -164,11 +196,9 @@ class VirtualMachineDeployer(object):
 
 	def deploy(self):
 		self.compute.create_vm()
-		self.mount_shares()
 
 	def deploy_image(self, image, image_resource_group):
 		self.compute.create_vm(image=image, image_resource_group=image_resource_group)
-		self.mount_shares()
 
 	def start(self):
 		self.compute.start_vm()
@@ -187,5 +217,12 @@ class VirtualMachineDeployer(object):
 	def upload_file(self, path, sharename=None):
 		self.storage.upload_file(path, sharename)
 
+	def create_share(self, sharename):
+		self.storage.create_share(sharename)
+
 	def public_ip(self):
 		return self.compute.public_ip_addr
+
+	def get_mounted_fileshares(self):
+		print("get mounted fileshares" + str(self.fileshares))
+		return self.fileshares
