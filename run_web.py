@@ -14,7 +14,7 @@ from utils import *
 from virtualmachinedeployer import VirtualMachineDeployer
 
 # Forms for Flask
-from Forms import ReusableForm, SimpleForm
+from Forms import ReusableForm
 from flask import Flask, flash, redirect, render_template, request, session, abort, url_for
 
 # App config.
