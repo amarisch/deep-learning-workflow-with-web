@@ -88,7 +88,7 @@ This repo contains a simple workflow for deep learning development/deployment on
 ## Running the web interface
 
 #### Watch a video of how it works:
-[![IMAGE ALT TEXT](http://img.youtube.com/vi/IbnmoBX21n8/0.jpg)](http://www.youtube.com/watch?v=IbnmoBX21n8 "Video Title")
+[![IMAGE ALT TEXT](http://img.youtube.com/vi/g3Wupb-rmKw/0.jpg)](http://www.youtube.com/watch?v=g3Wupb-rmKw "Video Title")
 
 In your terminal run:
 ```
